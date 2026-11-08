@@ -198,6 +198,7 @@ model Team {
   entries      LeagueEntry[]
   players      Player[]
   titles       Title[]
+  externalId   String?   @unique
   updatedAt    DateTime  @updatedAt
 
   @@index([isOwn, kind])
