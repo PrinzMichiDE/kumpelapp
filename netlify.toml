@@ -49,7 +49,6 @@
 # Environment variables for Netlify
 [build.environment]
   NODE_VERSION = "20"
-  NPM_FLAGS = "--frozen-lockfile"
 
 # Edge functions
 [[edge_functions]]
