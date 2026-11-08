@@ -1,0 +1,26 @@
+{
+  "name": "@kumpelapp/ticket-parser",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@kumpelapp/api-contracts": "workspace:*",
+    "pdf-parse": "^1.1.1",
+    "pdfjs-dist": "^4.0.379",
+    "tesseract.js": "^5.1.0",
+    "jsqr": "^1.4.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2",
+    "vitest": "^2.0.0",
+    "eslint": "^9.0.0",
+    "@types/pdf-parse": "^1.1.4"
+  }
+}

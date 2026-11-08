@@ -1,0 +1,23 @@
+{
+  "name": "@kumpelapp/auth",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-auth": "^1.0.0",
+    "@kumpelapp/db": "workspace:*",
+    "@kumpelapp/api-contracts": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2",
+    "vitest": "^2.0.0",
+    "eslint": "^9.0.0"
+  }
+}

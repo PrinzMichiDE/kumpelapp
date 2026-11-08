@@ -1,0 +1,717 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  FAN
+  EDITOR
+  ADMIN
+}
+
+enum Platform {
+  IOS
+  ANDROID
+  WEB
+}
+
+enum TeamKind {
+  SENIOR
+  YOUTH
+  TRADITION
+  DEPARTMENT
+}
+
+enum ReviewStatus {
+  AUTO
+  DRAFT
+  CHECKED
+}
+
+enum MatchStatus {
+  SCHEDULED
+  LIVE
+  FINISHED
+  POSTPONED
+  CANCELLED
+  ABANDONED
+}
+
+enum EventType {
+  GOAL
+  OWN_GOAL
+  PENALTY_GOAL
+  YELLOW_CARD
+  YELLOW_RED
+  RED_CARD
+  SUBSTITUTION
+  OTHER
+}
+
+enum Position {
+  GOALKEEPER
+  DEFENDER
+  MIDFIELDER
+  FORWARD
+}
+
+enum FavType {
+  MATCH
+  PLAYER
+  NEWS
+  TEAM
+}
+
+enum ParseStatus {
+  PENDING
+  PARSED
+  PARTIAL
+  FAILED
+}
+
+enum WalletPassType {
+  APPLE
+  GOOGLE
+}
+
+enum AttendanceStatus {
+  GOING
+  MAYBE
+  NOT_GOING
+}
+
+enum RideKind {
+  OFFER
+  REQUEST
+}
+
+enum PushCategory {
+  KICKOFF
+  GOAL
+  RESULT
+  NEWS
+  GROUP
+  TICKETS
+}
+
+enum NotifType {
+  KICKOFF
+  GOAL
+  RESULT
+  NEWS
+  GROUP
+  TICKETS
+  SYSTEM
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  role          UserRole  @default(FAN)
+  quietFrom     Int?
+  quietTo       Int?
+  highContrast  Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  favorites     Favorite[]
+  tickets       Ticket[]
+  pushTokens    PushToken[]
+  notifications Notification[]
+  pushPrefs     PushPref[]
+  tips          Tip[]
+  attendances   Attendance[]
+  votes         MatchVote[]
+  rides         Ride[]
+  quizAttempts  QuizAttempt[]
+  visits        VenueVisit[]
+  ownedGroups   Group[]         @relation("GroupOwner")
+  memberships   GroupMember[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accountId         String
+  providerId        String
+  accessToken       String?
+  refreshToken      String?
+  idToken           String?
+  accessTokenExpiresAt DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope             String?
+  password          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id        String   @id @default(cuid())
+  identifier String
+  value     String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([identifier, value])
+}
+
+model Team {
+  id           String    @id @default(cuid())
+  slug         String    @unique
+  name         String
+  shortName    String?
+  kind         TeamKind  @default(SENIOR)
+  ageGroup     String?
+  isOwn        Boolean   @default(false)
+  logoUrl      String?
+  venueId      String?
+  venue        Venue?    @relation(fields: [venueId], references: [id])
+  parentTeamId String?
+  parentTeam   Team?     @relation("TeamHierarchy", fields: [parentTeamId], references: [id])
+  childTeams   Team[]    @relation("TeamHierarchy")
+  entries      LeagueEntry[]
+  players      Player[]
+  titles       Title[]
+  updatedAt    DateTime  @updatedAt
+
+  @@index([isOwn, kind])
+}
+
+model Season {
+  id        String   @id @default(cuid())
+  label     String   @unique
+  startYear Int
+  endYear   Int
+  isCurrent Boolean  @default(false)
+  leagues   League[]
+  players   Player[]
+
+  @@index([startYear])
+}
+
+model League {
+  id        String   @id @default(cuid())
+  name      String
+  shortcut  String?
+  tier      Int?
+  seasonId  String
+  season    Season   @relation(fields: [seasonId], references: [id])
+  entries   LeagueEntry[]
+  matches   Match[]
+  standings Standing[]
+
+  @@unique([shortcut, seasonId])
+  @@index([seasonId])
+}
+
+model LeagueEntry {
+  id       String @id @default(cuid())
+  leagueId String
+  league   League @relation(fields: [leagueId], references: [id])
+  teamId   String
+  team     Team   @relation(fields: [teamId], references: [id])
+
+  @@unique([leagueId, teamId])
+}
+
+model Venue {
+  id                String       @id @default(cuid())
+  slug              String       @unique
+  name              String
+  address           String?
+  city              String
+  lat               Float?
+  lng               Float?
+  capacity          Int?
+  distanceKm        Int?
+  travelMinutesCar  Int?
+  awayBlockInfo     String?
+  travelCar         String?
+  travelTrain       String?
+  parkingInfo       String?
+  website           String?
+  imageUrl          String?
+  reviewStatus      ReviewStatus @default(AUTO)
+  source            String?
+  sourceUrl         String?
+  attribution       String?
+  fieldSources      Json?
+  coverage          Json?
+  fetchedAt         DateTime?
+  updatedAt         DateTime     @updatedAt
+  teams             Team[]
+  matches           Match[]
+  visits            VenueVisit[]
+
+  @@index([city])
+  @@index([reviewStatus])
+}
+
+model Match {
+  id            String      @id @default(cuid())
+  leagueId      String
+  league        League      @relation(fields: [leagueId], references: [id])
+  externalId    String?     @unique
+  source        String?
+  matchday      Int?
+  kickoff       DateTime
+  venueId       String?
+  venue         Venue?      @relation(fields: [venueId], references: [id])
+  homeTeamId    String
+  awayTeamId    String
+  homeGoals     Int?
+  awayGoals     Int?
+  halftimeHome  Int?
+  halftimeAway  Int?
+  attendance    Int?
+  status        MatchStatus @default(SCHEDULED)
+  editorNote    String?
+  events        MatchEvent[]
+  tickets       Ticket[]
+  tips          Tip[]
+  attendances   Attendance[]
+  votes         MatchVote[]
+  rides         Ride[]
+  sales         TicketSale[]
+  visits        VenueVisit[]
+  streams       StreamLink[]
+
+  @@index([kickoff])
+  @@index([leagueId, matchday])
+  @@index([homeTeamId, awayTeamId])
+}
+
+model MatchEvent {
+  id      String   @id @default(cuid())
+  matchId String
+  match   Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  minute  Int
+  type    EventType
+  side    String?
+  player  String?
+  text    String?
+
+  @@index([matchId, minute])
+}
+
+model Standing {
+  id            String @id @default(cuid())
+  leagueId      String
+  league        League @relation(fields: [leagueId], references: [id])
+  teamId        String
+  position      Int
+  played        Int @default(0)
+  won           Int @default(0)
+  drawn         Int @default(0)
+  lost          Int @default(0)
+  goalsFor      Int @default(0)
+  goalsAgainst  Int @default(0)
+  points        Int @default(0)
+  form          String?
+  updatedAt     DateTime @updatedAt
+
+  @@unique([leagueId, teamId])
+  @@index([leagueId, position])
+}
+
+model Player {
+  id          String   @id @default(cuid())
+  name        String
+  number      Int?
+  position    Position
+  teamId      String
+  team        Team     @relation(fields: [teamId], references: [id])
+  seasonId    String?
+  season      Season?  @relation(fields: [seasonId], references: [id])
+  imageUrl    String?
+  nationality String?
+  birthDate   DateTime?
+  heightCm    Int?
+  foot        String?
+  joinedAt    DateTime?
+  isLegend    Boolean  @default(false)
+  eraFrom     Int?
+  eraTo       Int?
+  sourceUrl   String?
+  externalId  String?
+  updatedAt   DateTime @updatedAt
+  votes       MatchVote[]
+
+  @@unique([teamId, externalId])
+  @@index([teamId, position])
+}
+
+model Title {
+  id           String       @id @default(cuid())
+  year         Int
+  competition  String
+  note         String?
+  teamId       String?
+  team         Team?        @relation(fields: [teamId], references: [id])
+  reviewStatus ReviewStatus @default(AUTO)
+  source       String?
+  sourceUrl    String?
+  attribution  String?
+
+  @@index([year])
+}
+
+model SeasonRecord {
+  id           String       @id @default(cuid())
+  label        String
+  leagueName   String
+  tier         Int?
+  position     Int?
+  points       Int?
+  note         String?
+  reviewStatus ReviewStatus @default(AUTO)
+  source       String?
+  sourceUrl    String?
+  attribution  String?
+
+  @@unique([label, leagueName])
+}
+
+model NewsItem {
+  id          String   @id @default(cuid())
+  externalUrl String   @unique
+  title       String
+  excerpt     String?
+  imageUrl    String?
+  publishedAt DateTime
+  source      String
+  category    String?
+  fetchedAt   DateTime @default(now())
+
+  @@index([publishedAt])
+}
+
+model StreamLink {
+  id      String @id @default(cuid())
+  name    String
+  url     String
+  kind    String
+  matchId String?
+  match   Match? @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@index([matchId])
+}
+
+model FanClub {
+  id        String @id @default(cuid())
+  name      String @unique
+  city      String?
+  lat       Float?
+  lng       Float?
+  contactUrl String?
+  isOfficial Boolean @default(true)
+
+  @@index([city])
+}
+
+model ClubContact {
+  id    String @id @default(cuid())
+  role  String @unique
+  name  String?
+  email String?
+  phone String?
+  url   String?
+  note  String?
+}
+
+model StaticLink {
+  id          String @id @default(cuid())
+  key         String @unique
+  label       String
+  url         String
+  description String?
+  category    String
+  sortOrder   Int @default(0)
+}
+
+model Department {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+  contactUrl  String?
+  sortOrder   Int @default(0)
+}
+
+enum MembershipType {
+  STANDARD
+  GIFT
+  LIFETIME
+}
+
+model MembershipLead {
+  id        String         @id @default(cuid())
+  name      String
+  email     String
+  message   String?
+  type      MembershipType @default(STANDARD)
+  createdAt DateTime       @default(now())
+  processed Boolean        @default(false)
+}
+
+model TicketSale {
+  id             String   @id @default(cuid())
+  matchId        String
+  match          Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  saleStart      DateTime?
+  saleEnd        DateTime?
+  shopUrl        String?
+  awayContingent String?
+  note           String?
+
+  @@index([matchId])
+}
+
+model Favorite {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type   FavType
+  refId  String
+
+  @@unique([userId, type, refId])
+}
+
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  Platform
+  createdAt DateTime @default(now())
+}
+
+model PushPref {
+  id       String       @id @default(cuid())
+  userId   String
+  user     User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category PushCategory
+  enabled  Boolean      @default(true)
+
+  @@unique([userId, category])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  type      NotifType
+  read      Boolean  @default(false)
+  data      Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, read])
+}
+
+model Group {
+  id         String   @id @default(cuid())
+  name       String
+  inviteCode String   @unique
+  ownerId    String
+  owner      User     @relation("GroupOwner", fields: [ownerId], references: [id])
+  createdAt  DateTime @default(now())
+  members    GroupMember[]
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  groupId  String
+  group    Group    @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  joinedAt DateTime @default(now())
+
+  @@unique([groupId, userId])
+}
+
+model Tip {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchId   String
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  homeGoals Int
+  awayGoals Int
+  points    Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, matchId])
+  @@index([matchId])
+}
+
+model Attendance {
+  id      String           @id @default(cuid())
+  userId  String
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchId String
+  match   Match            @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  status  AttendanceStatus
+  note    String?
+
+  @@unique([userId, matchId])
+}
+
+model Ride {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchId   String
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  kind      RideKind
+  fromPlace String
+  departAt  DateTime
+  seats     Int?
+  note      String?
+  createdAt DateTime @default(now())
+
+  @@index([matchId, kind])
+}
+
+model MatchVote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchId   String
+  match     Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  playerId  String
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, matchId])
+}
+
+model VenueVisit {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venueId   String
+  venue     Venue    @relation(fields: [venueId], references: [id])
+  matchId   String?
+  match     Match?   @relation(fields: [matchId], references: [id])
+  visitedAt DateTime
+  note      String?
+
+  @@unique([userId, venueId, visitedAt])
+}
+
+model QuizQuestion {
+  id          String       @id @default(cuid())
+  question    String
+  answers     Json
+  category    String?
+  active      Boolean      @default(true)
+  generatedBy String?
+  sourceRef   String?
+  reviewStatus ReviewStatus @default(AUTO)
+  attempts    QuizAttempt[]
+}
+
+model QuizAttempt {
+  id         String       @id @default(cuid())
+  userId     String
+  user       User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String
+  question   QuizQuestion @relation(fields: [questionId], references: [id])
+  correct    Boolean
+  createdAt  DateTime     @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Ticket {
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchId     String?
+  match       Match?       @relation(fields: [matchId], references: [id])
+  opponent    String?
+  matchDate   DateTime?
+  venue       String?
+  block       String?
+  row         String?
+  seat        String?
+  ticketType  String?
+  orderNumber String?
+  priceCents  Int?
+  pdfUrl      String?
+  pdfKey      String?
+  pageCount   Int?
+  qrData      String?
+  qrImageKey  String?
+  rawText     String?
+  parseStatus ParseStatus  @default(PENDING)
+  parseError  String?
+  parsedAt    DateTime?
+  passes      WalletPass[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([userId, matchDate])
+}
+
+model WalletPass {
+  id       String         @id @default(cuid())
+  ticketId String
+  ticket   Ticket         @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  type     WalletPassType
+  serial   String         @unique
+  issuedAt DateTime       @default(now())
+  revoked  Boolean        @default(false)
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  payload   Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}
+
+model SourceSyncLog {
+  id         String   @id @default(cuid())
+  source     String
+  ok         Boolean
+  durationMs Int
+  items      Int      @default(0)
+  message    String?
+  createdAt  DateTime @default(now())
+
+  @@index([source, createdAt])
+}
