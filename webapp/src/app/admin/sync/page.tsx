@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { RefreshCw, Play, AlertCircle, CheckCircle, Clock, Database, Zap, BarChart2, Book, HelpCircle } from 'lucide-react'
+import { RefreshCw, Play, AlertCircle, CheckCircle, Clock, Database, Zap, BarChart2, Book, HelpCircle, Users, Newspaper, Tv, Ticket } from 'lucide-react'
 import { Button } from '@kumpelapp/ui'
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
 import { Badge } from '@kumpelapp/ui'
@@ -30,6 +30,10 @@ const syncJobs: SyncStatus[] = [
   { source: 'away-info', label: 'Auswärts-Infos', icon: BarChart2, lastRun: null, isRunning: false },
   { source: 'traditions', label: 'Tradition', icon: Book, lastRun: null, isRunning: false },
   { source: 'quiz', label: 'Quiz-Fragen', icon: HelpCircle, lastRun: null, isRunning: false },
+  { source: 'squad', label: 'Kader', icon: Users, lastRun: null, isRunning: false },
+  { source: 'news', label: 'News', icon: Newspaper, lastRun: null, isRunning: false },
+  { source: 'streams', label: 'Livestreams', icon: Tv, lastRun: null, isRunning: false },
+  { source: 'tickets', label: 'Ticketverkauf', icon: Ticket, lastRun: null, isRunning: false },
 ]
 
 export default function SyncAdminPage() {
