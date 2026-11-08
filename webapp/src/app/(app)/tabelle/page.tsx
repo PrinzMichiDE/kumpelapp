@@ -16,49 +16,76 @@ function StandingRow({ standing, index, isAue }: StandingRowProps) {
   const formChars = standing.form?.split(',') || []
   const lastFive = formChars.slice(-5)
 
+  const formLabel = (result: string) => {
+    switch (result) {
+      case 'W':
+        return 'Sieg'
+      case 'D':
+        return 'Unentschieden'
+      case 'L':
+        return 'Niederlage'
+      default:
+        return 'Unbekannt'
+    }
+  }
+
   const getFormIcon = (result: string) => {
     switch (result) {
-      case 'W': return <TrendingUp className="h-4 w-4 text-fc-win" />
-      case 'D': return <Minus className="h-4 w-4 text-fc-draw" />
-      case 'L': return <TrendingDown className="h-4 w-4 text-fc-loss" />
-      default: return null
+      case 'W':
+        return <TrendingUp className="h-4 w-4 text-fc-win" aria-hidden="true" />
+      case 'D':
+        return <Minus className="h-4 w-4 text-fc-draw" aria-hidden="true" />
+      case 'L':
+        return <TrendingDown className="h-4 w-4 text-fc-loss" aria-hidden="true" />
+      default:
+        return null
     }
   }
 
   return (
-    <tr className={cn(
-      'hover:bg-fc-violet/5 transition-colors',
-      isAue && 'bg-fc-violet/10 font-medium'
-    )}>
-      <td className="px-4 py-3 text-center font-bold text-fc-fg">
-        {index + 1}.
-      </td>
-      <td className="px-4 py-3">
+    <tr
+      className={cn(
+        'border-b border-fc-border/70 transition-colors duration-150 hover:bg-fc-violet/5',
+        isAue && 'bg-fc-violet/12 font-medium ring-1 ring-inset ring-fc-violet/20'
+      )}
+    >
+      <td className="px-4 py-3 text-center text-sm font-bold tabular-nums text-fc-fg">{index + 1}.</td>
+      <th scope="row" className="px-4 py-3 text-left font-normal">
         <div className="flex items-center gap-3">
-          {standing.team.logoUrl && (
-            <img src={standing.team.logoUrl} alt="" className="h-6 w-6 rounded-full" />
-          )}
-          <span className={cn('font-medium', isAue && 'text-fc-violet')}>
+          {standing.team.logoUrl ? (
+            <img
+              src={standing.team.logoUrl}
+              alt=""
+              className="h-6 w-6 shrink-0 rounded-full bg-fc-border/30 object-contain"
+              loading="lazy"
+            />
+          ) : null}
+          <span className={cn('font-medium text-fc-fg', isAue && 'text-fc-violet-light')}>
             {standing.team.shortName || standing.team.name}
+            {isAue ? <span className="sr-only"> (FC Erzgebirge Aue)</span> : null}
           </span>
         </div>
-      </td>
-      <td className="px-4 py-3 text-center tabular-nums">{standing.played}</td>
-      <td className="px-4 py-3 text-center tabular-nums text-fc-win">{standing.won}</td>
-      <td className="px-4 py-3 text-center tabular-nums text-fc-draw">{standing.drawn}</td>
-      <td className="px-4 py-3 text-center tabular-nums text-fc-loss">{standing.lost}</td>
-      <td className="px-4 py-3 text-center tabular-nums">
+      </th>
+      <td className="px-4 py-3 text-center text-sm tabular-nums text-fc-fg/90">{standing.played}</td>
+      <td className="px-4 py-3 text-center text-sm tabular-nums text-fc-win">{standing.won}</td>
+      <td className="px-4 py-3 text-center text-sm tabular-nums text-fc-draw">{standing.drawn}</td>
+      <td className="px-4 py-3 text-center text-sm tabular-nums text-fc-loss">{standing.lost}</td>
+      <td className="px-4 py-3 text-center text-sm tabular-nums text-fc-fg/90">
         {standing.goalsFor}:{standing.goalsAgainst}
       </td>
-      <td className="px-4 py-3 text-center tabular-nums">
+      <td className="px-4 py-3 text-center text-sm tabular-nums text-fc-fg/90">
         {standing.goalsFor - standing.goalsAgainst >= 0 ? '+' : ''}
         {standing.goalsFor - standing.goalsAgainst}
       </td>
-      <td className="px-4 py-3 text-center font-bold text-lg tabular-nums">{standing.points}</td>
-      <td className="px-4 py-3 text-center">
-        <div className="flex items-center justify-center gap-1">
+      <td className="px-4 py-3 text-center text-base font-bold tabular-nums text-fc-fg">{standing.points}</td>
+      <td className="px-4 py-3">
+        <div className="flex items-center justify-center gap-1" aria-label={`Form: ${lastFive.map(formLabel).join(', ')}`}>
           {lastFive.map((result, i) => (
-            <span key={i} className="w-6 h-6 flex items-center justify-center text-xs">
+            <span
+              key={`${standing.id}-form-${i}`}
+              className="flex h-6 w-6 items-center justify-center rounded-md bg-fc-bg/30"
+              title={formLabel(result)}
+            >
               {getFormIcon(result)}
             </span>
           ))}
@@ -77,28 +104,53 @@ export default function TabellePage() {
           <p className="mt-2 text-fc-fg/70">Regionalliga Nordost 2026/27</p>
         </div>
 
-        <Card>
-          <CardHeader>
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b border-fc-border/70">
             <CardTitle className="text-xl">Regionalliga Nordost</CardTitle>
+            <p className="text-sm text-fc-fg/60">Aktueller Tabellenstand mit Form der letzten fünf Spiele.</p>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full" role="table">
+            <div className="overflow-x-auto overscroll-x-contain">
+              <table className="w-full min-w-[720px] border-collapse text-left" aria-label="Tabelle Regionalliga Nordost">
+                <caption className="sr-only">
+                  Tabelle der Regionalliga Nordost mit Platz, Verein, Spielen, Siegen, Unentschieden, Niederlagen, Toren,
+                  Differenz, Punkten und Form.
+                </caption>
                 <thead>
-                  <tr className="bg-fc-surface border-b border-fc-border">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">#</th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Verein</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Sp</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">S</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">U</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">N</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Tore</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Diff</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Pkt</th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Form</th>
+                  <tr className="bg-fc-surface/90">
+                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                      <abbr title="Platz" className="no-underline">#</abbr>
+                    </th>
+                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                      Verein
+                    </th>
+                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                      <abbr title="Spiele" className="no-underline">Sp</abbr>
+                    </th>
+                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                      <abbr title="Siege" className="no-underline">S</abbr>
+                    </th>
+                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                      <abbr title="Unentschieden" className="no-underline">U</abbr>
+                    </th>
+                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                      <abbr title="Niederlagen" className="no-underline">N</abbr>
+                    </th>
+                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                      Tore
+                    </th>
+                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                      <abbr title="Tordifferenz" className="no-underline">Diff</abbr>
+                    </th>
+                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                      <abbr title="Punkte" className="no-underline">Pkt</abbr>
+                    </th>
+                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                      Form
+                    </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-fc-border">
+                <tbody className="bg-card">
                   <StandingRow
                     standing={{
                       id: '1',
