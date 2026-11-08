@@ -1,7 +1,5 @@
 import { z } from 'zod'
-
-export const ReviewStatus = z.enum(['AUTO', 'DRAFT', 'CHECKED'])
-export type ReviewStatus = z.infer<typeof ReviewStatus>
+import { ReviewStatus } from './common'
 
 export const VenueDto = z.object({
   id: z.string(),
@@ -11,9 +9,9 @@ export const VenueDto = z.object({
   city: z.string(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
-  capacity: z.int().nullable(),
-  distanceKm: z.int().nullable(),
-  travelMinutesCar: z.int().nullable(),
+  capacity: z.number().int().nullable(),
+  distanceKm: z.number().int().nullable(),
+  travelMinutesCar: z.number().int().nullable(),
   awayBlockInfo: z.string().nullable(),
   travelCar: z.string().nullable(),
   travelTrain: z.string().nullable(),

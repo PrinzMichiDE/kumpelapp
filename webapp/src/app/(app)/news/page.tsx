@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { formatDate, formatDateTime } from '@kumpelapp/utils'
 import { cn } from '@kumpelapp/utils'
 
+const BASE_DATE = new Date('2026-08-01T00:00:00Z')
+
 const sourceLabels: Record<string, { label: string; color: string }> = {
   FC_AUE: { label: 'FC Erzgebirge Aue', color: 'bg-fc-violet/10 text-fc-violet' },
   MDR: { label: 'MDR', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
@@ -91,7 +93,7 @@ export default function NewsPage() {
                 title: `Wichtige News ${i + 1}: Aue bereitet sich auf nächstes Spiel vor`,
                 excerpt: 'Das Team trainiert intensiv für die kommende Partie. Der Trainer äußert sich zur Personalsituation und zur taktischen Ausrichtung.',
                 imageUrl: null,
-                publishedAt: new Date(Date.now() - i * 86400000).toISOString(),
+                publishedAt: new Date(BASE_DATE.getTime() - i * 86400000).toISOString(),
                 source: i % 3 === 0 ? 'FC_AUE' : i % 3 === 1 ? 'MDR' : 'FREIE_PRESSE',
                 category: 'Aktuelles',
               }}

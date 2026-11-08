@@ -5,11 +5,12 @@ import type { NextRequest } from 'next/server'
 const ADMIN_ROUTES = ['/admin', '/api/v1/admin']
 const PROTECTED_ROUTES = ['/profil', '/kumpels', '/tippspiel', '/wallet']
 
-export default auth((req) => {
-  const { nextUrl } = req
-  const isLoggedIn = !!req.auth
-  const userRole = req.auth?.user?.role || 'FAN'
+export async function middleware(req: NextRequest) {
+  const session = await auth.api.getSession({ headers: req.headers })
+  const isLoggedIn = !!session
+  const userRole = session?.user?.role || 'FAN'
 
+  const { nextUrl } = req
   const isAdminRoute = ADMIN_ROUTES.some((route) => nextUrl.pathname.startsWith(route))
   const isProtectedRoute = PROTECTED_ROUTES.some((route) => nextUrl.pathname.startsWith(route))
 
@@ -38,7 +39,7 @@ export default auth((req) => {
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
 
   return response
-})
+}
 
 export const config = {
   matcher: [

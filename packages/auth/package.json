@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "better-auth": "^1.0.0",
+    "@prisma/client": "^5.22.0",
     "@kumpelapp/db": "workspace:*",
     "@kumpelapp/api-contracts": "workspace:*"
   },

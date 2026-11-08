@@ -1,10 +1,5 @@
 import { z } from 'zod'
-
-export const ParseStatus = z.enum(['PENDING', 'PARSED', 'PARTIAL', 'FAILED'])
-export type ParseStatus = z.infer<typeof ParseStatus>
-
-export const WalletPassType = z.enum(['APPLE', 'GOOGLE'])
-export type WalletPassType = z.infer<typeof WalletPassType>
+import { ParseStatus, WalletPassType, ReviewStatus } from './common'
 
 export const TicketDto = z.object({
   id: z.string(),
@@ -18,10 +13,10 @@ export const TicketDto = z.object({
   seat: z.string().nullable(),
   ticketType: z.string().nullable(),
   orderNumber: z.string().nullable(),
-  priceCents: z.int().nullable(),
+  priceCents: z.number().int().nullable(),
   pdfUrl: z.string().url().nullable(),
   pdfKey: z.string().nullable(),
-  pageCount: z.int().nullable(),
+  pageCount: z.number().int().nullable(),
   qrData: z.string().nullable(),
   qrImageKey: z.string().nullable(),
   parseStatus: ParseStatus,

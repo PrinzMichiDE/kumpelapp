@@ -15,12 +15,12 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID || '',
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || '',
+      clientId: process.env['GOOGLE_CLIENT_ID'] || '',
+      clientSecret: process.env['GOOGLE_CLIENT_SECRET'] || '',
     },
     github: {
-      clientId: process.env.GITHUB_CLIENT_ID || '',
-      clientSecret: process.env.GITHUB_CLIENT_SECRET || '',
+      clientId: process.env['GITHUB_CLIENT_ID'] || '',
+      clientSecret: process.env['GITHUB_CLIENT_SECRET'] || '',
     },
   },
   session: {
@@ -55,7 +55,7 @@ export const auth = betterAuth({
     },
   },
   callbacks: {
-    async afterCreateUser({ user }) {
+    async afterCreateUser({ user }: { user: { id: string } }) {
       await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -67,4 +67,4 @@ export const auth = betterAuth({
 })
 
 export type Session = typeof auth.$Infer.Session
-export type User = typeof auth.$Infer.User
+export type User = typeof auth.$Infer.Session.user

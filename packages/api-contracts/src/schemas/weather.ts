@@ -8,7 +8,7 @@ export const WeatherDto = z.object({
   windSpeed: z.number().nullable(),
   windDirection: z.number().nullable(),
   condition: z.string().nullable(),
-  conditionCode: z.int().nullable(),
+  conditionCode: z.number().int().nullable(),
   humidity: z.number().nullable(),
   visibility: z.number().nullable(),
   uvIndex: z.number().nullable(),

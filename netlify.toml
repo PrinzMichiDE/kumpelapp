@@ -1,10 +1,28 @@
+# Netlify-Konfiguration — KumpelApp
+#
+# Monorepo-Setup nach Netlify-Empfehlung:
+#   • Base directory:               leer lassen (Repo-Root) → pnpm installiert
+#                                   das komplette Workspace
+#   • Package directory (nur UI):   webapp → Framework-Erkennung + Suche nach
+#                                   netlify.toml
+#   • Der Build läuft im Root, damit Turborepo zuerst alle @kumpelapp/*-Pakete
+#     baut (inkl. `prisma generate` in @kumpelapp/db) und danach Next.js.
+#     Ein Build direkt in webapp/ würde die `workspace:*`-Abhängigkeiten nicht
+#     auflösen.
+
 [build]
-  base = "webapp"
-  command = "npm run build"
-  publish = ".next"
+  command = "pnpm turbo run build --filter=webapp"
+  publish = "webapp/.next"
 
 [build.environment]
-  NODE_VERSION = "20"
+  # Next.js 16 setzt Node >= 20.9 voraus
+  NODE_VERSION = "22"
+  # Muss zu "packageManager" in package.json passen (corepack)
+  PNPM_VERSION = "9.12.0"
+  NEXT_TELEMETRY_DISABLED = "1"
 
-[[plugins]]
-  package = "@netlify/plugin-nextjs"
+# Der Next.js-Adapter (OpenNext) wird von Netlify automatisch provisioniert und
+# aktualisiert — deshalb hier bewusst kein `[[plugins]]`-Eintrag.
+#
+# Laufzeit-Env-Vars (DATABASE_URL, BETTER_AUTH_*, OAuth, Firebase, Wallet, …)
+# werden im Netlify-UI gepflegt; vollständige Liste siehe .env.example.

@@ -1,14 +1,15 @@
 import { PlayerDto } from '@kumpelapp/api-contracts'
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
 import { Badge } from '@kumpelapp/ui'
-import { User, Shield, Football, HelpCircle } from 'lucide-react'
+import { Button } from '@kumpelapp/ui'
+import { User, Shield, Goal, HelpCircle } from 'lucide-react'
 import { cn } from '@kumpelapp/utils'
 
 const positionConfig = {
   GOALKEEPER: { label: 'Torwart', icon: Shield, color: 'bg-fc-violet/10 text-fc-violet' },
   DEFENDER: { label: 'Abwehr', icon: Shield, color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300' },
-  MIDFIELDER: { label: 'Mittelfeld', icon: Football, color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
-  FORWARD: { label: 'Sturm', icon: Football, color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
+  MIDFIELDER: { label: 'Mittelfeld', icon: Goal, color: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300' },
+  FORWARD: { label: 'Sturm', icon: Goal, color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' },
 } as const
 
 function PlayerCard({ player }: { player: PlayerDto }) {

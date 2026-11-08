@@ -1,7 +1,5 @@
 import { z } from 'zod'
-
-export const TeamKind = z.enum(['SENIOR', 'YOUTH', 'TRADITION', 'DEPARTMENT'])
-export type TeamKind = z.infer<typeof TeamKind>
+import { TeamKind, ReviewStatus } from './common'
 
 export const TeamDto = z.object({
   id: z.string(),

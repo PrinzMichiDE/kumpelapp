@@ -1,22 +1,5 @@
 import { z } from 'zod'
-
-export const UserRole = z.enum(['FAN', 'EDITOR', 'ADMIN'])
-export type UserRole = z.infer<typeof UserRole>
-
-export const Platform = z.enum(['IOS', 'ANDROID', 'WEB'])
-export type Platform = z.infer<typeof Platform>
-
-export const FavType = z.enum(['MATCH', 'PLAYER', 'NEWS', 'TEAM'])
-export type FavType = z.infer<typeof FavType>
-
-export const PushCategory = z.enum(['KICKOFF', 'GOAL', 'RESULT', 'NEWS', 'GROUP', 'TICKETS'])
-export type PushCategory = z.infer<typeof PushCategory>
-
-export const AttendanceStatus = z.enum(['GOING', 'MAYBE', 'NOT_GOING'])
-export type AttendanceStatus = z.infer<typeof AttendanceStatus>
-
-export const RideKind = z.enum(['OFFER', 'REQUEST'])
-export type RideKind = z.infer<typeof RideKind>
+import { UserRole, Platform, FavType, PushCategory, AttendanceStatus, RideKind, NotifType } from './common'
 
 export const UserDto = z.object({
   id: z.string(),
@@ -24,8 +7,8 @@ export const UserDto = z.object({
   name: z.string().nullable(),
   image: z.string().url().nullable(),
   role: UserRole,
-  quietFrom: z.int().min(0).max(23).nullable(),
-  quietTo: z.int().min(0).max(23).nullable(),
+  quietFrom: z.number().int().min(0).max(23).nullable(),
+  quietTo: z.number().int().min(0).max(23).nullable(),
   highContrast: z.boolean(),
   createdAt: z.string().datetime(),
 })
@@ -61,7 +44,7 @@ export const NotificationDto = z.object({
   userId: z.string(),
   title: z.string(),
   body: z.string(),
-  type: z.string(),
+  type: NotifType,
   read: z.boolean(),
   data: z.unknown().nullable(),
   createdAt: z.string().datetime(),
@@ -78,7 +61,7 @@ export const GroupDto = z.object({
     name: z.string().nullable(),
   }),
   createdAt: z.string().datetime(),
-  memberCount: z.int(),
+  memberCount: z.number().int(),
   isMember: z.boolean(),
   isOwner: z.boolean(),
 })
@@ -100,9 +83,9 @@ export const TipDto = z.object({
   id: z.string(),
   userId: z.string(),
   matchId: z.string(),
-  homeGoals: z.int(),
-  awayGoals: z.int(),
-  points: z.int().nullable(),
+  homeGoals: z.number().int(),
+  awayGoals: z.number().int(),
+  points: z.number().int().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })
@@ -110,8 +93,8 @@ export type TipDto = z.infer<typeof TipDto>
 
 export const TipSubmit = z.object({
   matchId: z.string(),
-  homeGoals: z.int().min(0).max(20),
-  awayGoals: z.int().min(0).max(20),
+  homeGoals: z.number().int().min(0).max(20),
+  awayGoals: z.number().int().min(0).max(20),
 })
 export type TipSubmit = z.infer<typeof TipSubmit>
 
@@ -142,7 +125,7 @@ export const RideDto = z.object({
   kind: RideKind,
   fromPlace: z.string(),
   departAt: z.string().datetime(),
-  seats: z.int().nullable(),
+  seats: z.number().int().nullable(),
   note: z.string().nullable(),
   createdAt: z.string().datetime(),
 })
@@ -153,7 +136,7 @@ export const RideSubmit = z.object({
   kind: RideKind,
   fromPlace: z.string(),
   departAt: z.string().datetime(),
-  seats: z.int().min(1).max(8).optional(),
+  seats: z.number().int().min(1).max(8).optional(),
   note: z.string().optional(),
 })
 export type RideSubmit = z.infer<typeof RideSubmit>
@@ -166,7 +149,7 @@ export const MatchVoteDto = z.object({
   player: z.object({
     id: z.string(),
     name: z.string(),
-    number: z.int().nullable(),
+    number: z.number().int().nullable(),
     position: z.string(),
   }),
   createdAt: z.string().datetime(),

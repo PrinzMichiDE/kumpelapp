@@ -122,8 +122,8 @@ export {
   NavigationMenuList,
   NavigationMenuItem,
   NavigationMenuContent,
-  NavigationMenuTrigger: navigationMenuTriggerStyle,
   NavigationMenuLink,
   NavigationMenuIndicator,
   NavigationMenuViewport,
+  navigationMenuTriggerStyle as NavigationMenuTrigger,
 }

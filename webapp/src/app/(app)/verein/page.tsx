@@ -5,6 +5,24 @@ import Link from 'next/link'
 import { cn } from '@kumpelapp/utils'
 
 function SectionCard({ title, icon: Icon, children, href, external }: { title: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode; href?: string; external?: boolean }) {
+  if (!href) {
+    return (
+      <Card className="h-full transition-all hover:shadow-lg hover:border-fc-violet/50 group">
+        <CardHeader>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 rounded-lg bg-fc-violet/10 flex items-center justify-center group-hover:bg-fc-violet group-hover:text-white transition-colors">
+              <Icon className="h-6 w-6 text-fc-violet group-hover:text-white transition-colors" aria-hidden="true" />
+            </div>
+            <CardTitle className="text-lg">{title}</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {children}
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
     <Link href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} className="block">
       <Card className="h-full transition-all hover:shadow-lg hover:border-fc-violet/50 group">
@@ -18,14 +36,12 @@ function SectionCard({ title, icon: Icon, children, href, external }: { title: s
         </CardHeader>
         <CardContent>
           {children}
-          {href && (
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-sm text-fc-violet hover:text-fc-violet-light font-medium flex items-center gap-1">
-                {external ? 'Zur Website' : 'Mehr erfahren'}
-                <ExternalLink className="h-4 w-4" aria-hidden="true" />
-              </span>
-            </div>
-          )}
+          <div className="mt-4 flex items-center justify-between">
+            <span className="text-sm text-fc-violet hover:text-fc-violet-light font-medium flex items-center gap-1">
+              {external ? 'Zur Website' : 'Mehr erfahren'}
+              <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            </span>
+          </div>
         </CardContent>
       </Card>
     </Link>

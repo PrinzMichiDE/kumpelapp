@@ -1,23 +1,16 @@
 import { z } from 'zod'
-
-export const Position = z.enum([
-  'GOALKEEPER',
-  'DEFENDER',
-  'MIDFIELDER',
-  'FORWARD',
-])
-export type Position = z.infer<typeof Position>
+import { Position, ReviewStatus } from './common'
 
 export const PlayerDto = z.object({
   id: z.string(),
   name: z.string(),
-  number: z.int().nullable(),
+  number: z.number().int().nullable(),
   position: Position,
   teamId: z.string(),
   imageUrl: z.string().url().nullable(),
   nationality: z.string().nullable(),
   birthDate: z.string().datetime().nullable(),
-  heightCm: z.int().nullable(),
+  heightCm: z.number().int().nullable(),
   foot: z.string().nullable(),
   isLegend: z.boolean(),
   sourceUrl: z.string().url().nullable(),

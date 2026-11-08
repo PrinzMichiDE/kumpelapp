@@ -1,31 +1,10 @@
 import { z } from 'zod'
-
-export const MatchStatus = z.enum([
-  'SCHEDULED',
-  'LIVE',
-  'FINISHED',
-  'POSTPONED',
-  'CANCELLED',
-  'ABANDONED',
-])
-export type MatchStatus = z.infer<typeof MatchStatus>
-
-export const EventType = z.enum([
-  'GOAL',
-  'OWN_GOAL',
-  'PENALTY_GOAL',
-  'YELLOW_CARD',
-  'YELLOW_RED',
-  'RED_CARD',
-  'SUBSTITUTION',
-  'OTHER',
-])
-export type EventType = z.infer<typeof EventType>
+import { MatchStatus, EventType, ReviewStatus } from './common'
 
 export const MatchEventDto = z.object({
   id: z.string(),
   matchId: z.string(),
-  minute: z.int(),
+  minute: z.number().int(),
   type: EventType,
   side: z.string().nullable(),
   player: z.string().nullable(),
@@ -63,19 +42,19 @@ export const MatchDto = z.object({
   leagueId: z.string(),
   externalId: z.string().nullable(),
   source: z.string().nullable(),
-  matchday: z.int().nullable(),
+  matchday: z.number().int().nullable(),
   kickoff: z.string().datetime(),
   status: MatchStatus,
   venue: VenueRefDto.nullable(),
   homeTeam: TeamRefDto,
   awayTeam: TeamRefDto,
-  homeGoals: z.int().nullable(),
-  awayGoals: z.int().nullable(),
-  halftimeHome: z.int().nullable(),
-  halftimeAway: z.int().nullable(),
-  attendance: z.int().nullable(),
+  homeGoals: z.number().int().nullable(),
+  awayGoals: z.number().int().nullable(),
+  halftimeHome: z.number().int().nullable(),
+  halftimeAway: z.number().int().nullable(),
+  attendance: z.number().int().nullable(),
   editorNote: z.string().nullable(),
-  events: MatchEventListDto.optional(),
+  events: z.array(MatchEventDto).optional(),
   ticketSale: z.object({
     saleStart: z.string().datetime().nullable(),
     saleEnd: z.string().datetime().nullable(),
@@ -102,11 +81,11 @@ export type MatchListDto = z.infer<typeof MatchListDto>
 export const MatchQuery = z.object({
   season: z.string().optional(),
   team: z.string().optional(),
-  matchday: z.coerce.int().optional(),
-  status: MatchStatus.optional(),
+  matchday: z.number().int().optional(),
+  status: z.string().optional(),
   from: z.string().datetime().optional(),
   to: z.string().datetime().optional(),
-  limit: z.coerce.int().default(50).optional(),
+  limit: z.number().int().default(50).optional(),
   cursor: z.string().optional(),
 })
 export type MatchQuery = z.infer<typeof MatchQuery>

@@ -16,7 +16,7 @@ export const NewsListDto = z.array(NewsItemDto)
 export type NewsListDto = z.infer<typeof NewsListDto>
 
 export const NewsQuery = z.object({
-  limit: z.coerce.int().default(20).optional(),
+  limit: z.number().int().default(20).optional(),
   cursor: z.string().optional(),
   source: z.string().optional(),
   category: z.string().optional(),

@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { formatDate, formatKickoff } from '@kumpelapp/utils'
 import { cn } from '@kumpelapp/utils'
 
+const BASE_DATE = new Date('2026-08-01T00:00:00Z')
+
 function VenueCard({ venue, match }: { venue: VenueDto; match?: { kickoff: string; homeTeam: string; awayTeam: string } }) {
   const isAueAway = match?.awayTeam === 'FC Erzgebirge Aue'
 
@@ -167,9 +169,13 @@ export default function AuswaertsPage() {
                 sourceUrl: 'https://www.wikidata.org',
                 attribution: '© OpenStreetMap-Mitwirkende (ODbL 1.0)',
                 imageUrl: null,
+                website: null,
+                fieldSources: null,
+                coverage: null,
+                fetchedAt: null,
               }}
               match={{
-                kickoff: new Date(Date.now() + (i + 1) * 7 * 86400000).toISOString(),
+                kickoff: new Date(BASE_DATE.getTime() + (i + 1) * 7 * 86400000).toISOString(),
                 homeTeam: venue.team,
                 awayTeam: 'FC Erzgebirge Aue',
               }}

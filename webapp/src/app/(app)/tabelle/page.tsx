@@ -4,6 +4,8 @@ import { Badge } from '@kumpelapp/ui'
 import { Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react'
 import { cn } from '@kumpelapp/utils'
 
+const BASE_DATE = new Date('2026-08-01T00:00:00Z')
+
 interface StandingRowProps {
   standing: StandingDto
   index: number
@@ -106,7 +108,6 @@ export default function TabellePage() {
                         name: 'FC Rot-Weiß Erfurt',
                         shortName: 'RWE',
                         logoUrl: null,
-                        isOwn: false,
                       },
                       position: 1,
                       played: 16,
@@ -117,6 +118,8 @@ export default function TabellePage() {
                       goalsAgainst: 15,
                       points: 34,
                       form: 'W,W,D,W,W',
+                      goalDifference: 17,
+                      updatedAt: BASE_DATE.toISOString(),
                     }}
                     index={0}
                     isAue={false}
@@ -130,7 +133,7 @@ export default function TabellePage() {
                         name: 'Chemnitzer FC',
                         shortName: 'CFC',
                         logoUrl: null,
-                        isOwn: false,
+                        
                       },
                       position: 2,
                       played: 16,
@@ -141,6 +144,8 @@ export default function TabellePage() {
                       goalsAgainst: 12,
                       points: 32,
                       form: 'W,D,W,W,D',
+                      goalDifference: 16,
+                      updatedAt: BASE_DATE.toISOString(),
                     }}
                     index={1}
                     isAue={false}
@@ -154,7 +159,7 @@ export default function TabellePage() {
                         name: 'Hallescher FC',
                         shortName: 'HFC',
                         logoUrl: null,
-                        isOwn: false,
+                        
                       },
                       position: 3,
                       played: 16,
@@ -165,6 +170,8 @@ export default function TabellePage() {
                       goalsAgainst: 18,
                       points: 30,
                       form: 'L,W,W,D,W',
+                      goalDifference: 12,
+                      updatedAt: BASE_DATE.toISOString(),
                     }}
                     index={2}
                     isAue={false}
@@ -178,7 +185,7 @@ export default function TabellePage() {
                         name: 'BFC Dynamo',
                         shortName: 'BFC',
                         logoUrl: null,
-                        isOwn: false,
+                        
                       },
                       position: 4,
                       played: 16,
@@ -189,6 +196,8 @@ export default function TabellePage() {
                       goalsAgainst: 14,
                       points: 29,
                       form: 'D,W,L,W,W',
+                      goalDifference: 12,
+                      updatedAt: BASE_DATE.toISOString(),
                     }}
                     index={3}
                     isAue={false}
@@ -202,7 +211,7 @@ export default function TabellePage() {
                         name: 'VSG Altglienicke',
                         shortName: 'VSG',
                         logoUrl: null,
-                        isOwn: false,
+                        
                       },
                       position: 5,
                       played: 16,
@@ -213,6 +222,8 @@ export default function TabellePage() {
                       goalsAgainst: 16,
                       points: 28,
                       form: 'W,W,D,L,W',
+                      goalDifference: 9,
+                      updatedAt: BASE_DATE.toISOString(),
                     }}
                     index={4}
                     isAue={false}
@@ -226,7 +237,7 @@ export default function TabellePage() {
                         name: 'Greifswalder FC',
                         shortName: 'GFC',
                         logoUrl: null,
-                        isOwn: false,
+                        
                       },
                       position: 6,
                       played: 16,
@@ -237,6 +248,8 @@ export default function TabellePage() {
                       goalsAgainst: 19,
                       points: 27,
                       form: 'L,W,D,W,L',
+                      goalDifference: 5,
+                      updatedAt: BASE_DATE.toISOString(),
                     }}
                     index={5}
                     isAue={false}
@@ -250,7 +263,6 @@ export default function TabellePage() {
                         name: 'FC Erzgebirge Aue',
                         shortName: 'AUE',
                         logoUrl: null,
-                        isOwn: true,
                       },
                       position: 7,
                       played: 16,
@@ -261,6 +273,8 @@ export default function TabellePage() {
                       goalsAgainst: 17,
                       points: 26,
                       form: 'W,D,W,W,D',
+                      goalDifference: 6,
+                      updatedAt: BASE_DATE.toISOString(),
                     }}
                     index={6}
                     isAue={true}
@@ -274,7 +288,7 @@ export default function TabellePage() {
                         name: '1. FC Lok Leipzig',
                         shortName: 'LOK',
                         logoUrl: null,
-                        isOwn: false,
+                        
                       },
                       position: 8,
                       played: 16,
@@ -285,6 +299,8 @@ export default function TabellePage() {
                       goalsAgainst: 18,
                       points: 25,
                       form: 'D,L,W,D,W',
+                      goalDifference: 4,
+                      updatedAt: BASE_DATE.toISOString(),
                     }}
                     index={7}
                     isAue={false}
