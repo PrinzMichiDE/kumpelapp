@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { RefreshCw, Play, AlertCircle, CheckCircle, Clock, Database, Zap, BarChart2, Book, HelpCircle, Users, Newspaper, Tv, Ticket } from 'lucide-react'
+import { RefreshCw, AlertCircle, CheckCircle, Clock, Database, Zap, BarChart2, Book, HelpCircle, Users, Newspaper, Tv, Ticket } from 'lucide-react'
 import { Button } from '@kumpelapp/ui'
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
 import { Badge } from '@kumpelapp/ui'
@@ -36,9 +36,12 @@ const syncJobs: SyncStatus[] = [
   { source: 'tickets', label: 'Ticketverkauf', icon: Ticket, lastRun: null, isRunning: false },
 ]
 
+type Feedback = { type: 'success' | 'error'; text: string } | null
+
 export default function SyncAdminPage() {
   const [jobs, setJobs] = useState<SyncStatus[]>(syncJobs)
   const [logs, setLogs] = useState<Record<string, SyncJob[]>>({})
+  const [feedback, setFeedback] = useState<Feedback>(null)
 
   useEffect(() => {
     fetchAllLogs()
@@ -47,14 +50,14 @@ export default function SyncAdminPage() {
   const fetchAllLogs = async () => {
     try {
       const responses = await Promise.all(
-        jobs.map(job => fetch(`/api/v1/admin/sync/${job.source}`).then(r => r.json()))
+        jobs.map((job) => fetch(`/api/v1/admin/sync/${job.source}`).then((r) => r.json()))
       )
       const logsMap: Record<string, SyncJob[]> = {}
       jobs.forEach((job, i) => {
-        if (responses[i].data) {
+        if (responses[i]?.data) {
           logsMap[job.source] = responses[i].data
           if (responses[i].data[0]) {
-            setJobs(prev => prev.map(j => j.source === job.source ? { ...j, lastRun: responses[i].data[0] } : j))
+            setJobs((prev) => prev.map((j) => (j.source === job.source ? { ...j, lastRun: responses[i].data[0] } : j)))
           }
         }
       })
@@ -65,7 +68,8 @@ export default function SyncAdminPage() {
   }
 
   const triggerSync = async (source: string) => {
-    setJobs(prev => prev.map(j => j.source === source ? { ...j, isRunning: true } : j))
+    setFeedback(null)
+    setJobs((prev) => prev.map((j) => (j.source === source ? { ...j, isRunning: true } : j)))
 
     try {
       const response = await fetch(`/api/v1/admin/sync/${source}`, {
@@ -75,87 +79,125 @@ export default function SyncAdminPage() {
       })
 
       const result = await response.json()
-      
+
       if (result.success) {
         await fetchAllLogs()
+        setFeedback({ type: 'success', text: `Synchronisierung „${source}“ erfolgreich gestartet/abgeschlossen.` })
       } else {
-        alert(`Sync fehlgeschlagen: ${result.error?.message || 'Unbekannter Fehler'}`)
+        setFeedback({ type: 'error', text: `Sync fehlgeschlagen: ${result.error?.message || 'Unbekannter Fehler'}` })
       }
     } catch (error) {
-      alert(`Sync fehlgeschlagen: ${error}`)
+      setFeedback({ type: 'error', text: `Sync fehlgeschlagen: ${String(error)}` })
     } finally {
-      setJobs(prev => prev.map(j => j.source === source ? { ...j, isRunning: false } : j))
+      setJobs((prev) => prev.map((j) => (j.source === source ? { ...j, isRunning: false } : j)))
     }
   }
 
   const getStatusBadge = (job: SyncStatus) => {
-    if (job.isRunning) return <Badge variant="default"><Clock className="h-3 w-3 mr-1 animate-spin" /> Läuft...</Badge>
+    if (job.isRunning)
+      return (
+        <Badge variant="default" aria-label="Synchronisierung läuft">
+          <Clock className="mr-1 h-3 w-3 animate-spin motion-reduce:animate-none" aria-hidden="true" /> Läuft...
+        </Badge>
+      )
     if (!job.lastRun) return <Badge variant="outline">Nie gelaufen</Badge>
-    return job.lastRun.ok 
-      ? <Badge variant="success"><CheckCircle className="h-3 w-3 mr-1" /> OK</Badge>
-      : <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" /> Fehler</Badge>
+    return job.lastRun.ok ? (
+      <Badge variant="success">
+        <CheckCircle className="mr-1 h-3 w-3" aria-hidden="true" /> OK
+      </Badge>
+    ) : (
+      <Badge variant="destructive">
+        <AlertCircle className="mr-1 h-3 w-3" aria-hidden="true" /> Fehler
+      </Badge>
+    )
   }
 
   return (
-    <div className="p-6 lg:p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-fc-fg">Sync-Verwaltung</h1>
+    <div className="p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-fc-fg">Sync-Verwaltung</h1>
         <p className="mt-2 text-fc-fg/70">Externe Datenquellen synchronisieren und Status überwachen</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div aria-live="polite" aria-atomic="true" className="mb-6 min-h-[1.5rem]">
+        {feedback ? (
+          <div
+            role={feedback.type === 'error' ? 'alert' : 'status'}
+            className={
+              feedback.type === 'error'
+                ? 'rounded-xl border border-fc-loss/30 bg-fc-loss/10 px-4 py-3 text-sm text-fc-fg'
+                : 'rounded-xl border border-fc-win/30 bg-fc-win/10 px-4 py-3 text-sm text-fc-fg'
+            }
+          >
+            <span className="inline-flex items-center gap-2">
+              {feedback.type === 'error' ? (
+                <AlertCircle className="h-4 w-4 shrink-0 text-fc-loss" aria-hidden="true" />
+              ) : (
+                <CheckCircle className="h-4 w-4 shrink-0 text-fc-win" aria-hidden="true" />
+              )}
+              {feedback.text}
+            </span>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 sm:gap-5">
         {jobs.map((job) => {
           const Icon = job.icon
           return (
-            <Card key={job.source} className="h-full">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-xl flex items-center gap-2">
-                    <Icon className="h-6 w-6 text-fc-violet" aria-hidden="true" />
-                    {job.label}
+            <Card key={job.source} className="h-full border-fc-border/80 transition-[border-color,box-shadow] duration-200 hover:border-fc-violet/35 hover:shadow-md hover:shadow-fc-violet/5">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-3">
+                  <CardTitle className="flex items-center gap-2 text-lg leading-tight">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-fc-violet/12 text-fc-violet ring-1 ring-inset ring-fc-violet/20">
+                      <Icon className="h-4.5 w-4.5" aria-hidden="true" />
+                    </span>
+                    <span>{job.label}</span>
                   </CardTitle>
                   {getStatusBadge(job)}
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="pt-0">
                 <div className="space-y-3">
                   {job.lastRun ? (
                     <>
-                      <div className="flex items-center gap-2 text-sm text-fc-fg/60">
-                        <Clock className="h-4 w-4" aria-hidden="true" />
+                      <div className="flex items-center gap-2 text-sm text-fc-fg/65">
+                        <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
                         <span>Letzter Lauf: {formatDateTime(job.lastRun.createdAt)}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-fc-fg/60">
-                        <Zap className="h-4 w-4" aria-hidden="true" />
+                      <div className="flex items-center gap-2 text-sm text-fc-fg/65">
+                        <Zap className="h-4 w-4 shrink-0" aria-hidden="true" />
                         <span>Dauer: {job.lastRun.durationMs}ms</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-fc-fg/60">
-                        <Database className="h-4 w-4" aria-hidden="true" />
+                      <div className="flex items-center gap-2 text-sm text-fc-fg/65">
+                        <Database className="h-4 w-4 shrink-0" aria-hidden="true" />
                         <span>Elemente: {job.lastRun.items}</span>
                       </div>
-                      {job.lastRun.message && (
-                        <div className="text-sm text-fc-fg/70 bg-fc-surface p-2 rounded">
+                      {job.lastRun.message ? (
+                        <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-2.5 text-sm leading-relaxed text-fc-fg/75">
                           {job.lastRun.message}
                         </div>
-                      )}
+                      ) : null}
                     </>
                   ) : (
-                    <p className="text-sm text-fc-fg/50">Noch nie synchronisiert</p>
+                    <p className="text-sm text-fc-fg/55">Noch nie synchronisiert</p>
                   )}
                   <Button
-                    className="w-full mt-4"
+                    className="mt-2 w-full"
                     onClick={() => triggerSync(job.source)}
                     disabled={job.isRunning}
                     variant={job.isRunning ? 'outline' : 'default'}
+                    aria-busy={job.isRunning}
+                    aria-label={job.isRunning ? `${job.label} wird synchronisiert` : `${job.label} jetzt synchronisieren`}
                   >
                     {job.isRunning ? (
                       <>
-                        <Clock className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+                        <Clock className="mr-2 h-4 w-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                         Synchronisiere...
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="h-4 w-4 mr-2" aria-hidden="true" />
+                        <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
                         Jetzt synchronisieren
                       </>
                     )}
@@ -168,45 +210,66 @@ export default function SyncAdminPage() {
       </div>
 
       {/* Recent Logs */}
-      <Card>
-        <CardHeader>
+      <Card className="border-fc-border/80">
+        <CardHeader className="pb-3">
           <CardTitle className="text-xl">Letzte Sync-Logs</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
-            <table className="w-full" role="table">
+          <div className="overflow-x-auto rounded-xl border border-fc-border/60">
+            <table className="w-full min-w-[720px] text-sm">
+              <caption className="sr-only">Letzte Synchronisierungsprotokolle nach Quelle</caption>
               <thead>
-                <tr className="bg-fc-surface border-b border-fc-border">
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Quelle</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Zeit</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Status</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Dauer</th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Elemente</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-fc-fg/60 uppercase tracking-wider">Nachricht</th>
+                <tr className="border-b border-fc-border/70 bg-fc-bg/35">
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fc-fg/60">
+                    Quelle
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fc-fg/60">
+                    Zeit
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/60">
+                    Status
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/60">
+                    Dauer
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/60">
+                    Elemente
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fc-fg/60">
+                    Nachricht
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-fc-border">
-                {Object.entries(logs).flatMap(([source, sourceLogs]) => 
-                  sourceLogs.slice(0, 5).map(log => (
-                    <tr key={`${source}-${log.id}`} className="hover:bg-fc-violet/5">
-                      <td className="px-4 py-3 font-medium text-fc-fg">{source}</td>
+              <tbody className="divide-y divide-fc-border/60">
+                {Object.entries(logs).flatMap(([source, sourceLogs]) =>
+                  sourceLogs.slice(0, 5).map((log) => (
+                    <tr key={`${source}-${log.id}`} className="transition-colors hover:bg-fc-violet/5">
+                      <th scope="row" className="px-4 py-3 text-left font-medium text-fc-fg">
+                        {source}
+                      </th>
                       <td className="px-4 py-3 text-fc-fg/70">{formatDateTime(log.createdAt)}</td>
                       <td className="px-4 py-3 text-center">
                         {log.ok ? (
-                          <Badge variant="success"><CheckCircle className="h-3 w-3 mr-1" /> OK</Badge>
+                          <Badge variant="success">
+                            <CheckCircle className="mr-1 h-3 w-3" aria-hidden="true" /> OK
+                          </Badge>
                         ) : (
-                          <Badge variant="destructive"><AlertCircle className="h-3 w-3 mr-1" /> Fehler</Badge>
+                          <Badge variant="destructive">
+                            <AlertCircle className="mr-1 h-3 w-3" aria-hidden="true" /> Fehler
+                          </Badge>
                         )}
                       </td>
-                      <td className="px-4 py-3 text-center tabular-nums">{log.durationMs}ms</td>
-                      <td className="px-4 py-3 text-center tabular-nums">{log.items}</td>
-                      <td className="px-4 py-3 text-fc-fg/70 max-w-xs truncate">{log.message || '—'}</td>
+                      <td className="px-4 py-3 text-center tabular-nums text-fc-fg/75">{log.durationMs}ms</td>
+                      <td className="px-4 py-3 text-center tabular-nums text-fc-fg/75">{log.items}</td>
+                      <td className="max-w-xs truncate px-4 py-3 text-fc-fg/70" title={log.message || undefined}>
+                        {log.message || '—'}
+                      </td>
                     </tr>
                   ))
                 )}
                 {Object.keys(logs).length === 0 && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-8 text-center text-fc-fg/50">
+                    <td colSpan={6} className="px-4 py-10 text-center text-fc-fg/55">
                       Keine Logs verfügbar. Führe einen Sync aus.
                     </td>
                   </tr>
