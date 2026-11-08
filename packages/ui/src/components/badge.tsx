@@ -3,16 +3,18 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '../lib/utils'
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-[color,background-color,border-color,box-shadow] duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background',
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-violet-600 text-white hover:bg-violet-700',
-        secondary: 'border-transparent bg-violet-100 text-violet-900 hover:bg-violet-200 dark:bg-violet-900 dark:text-violet-100',
-        destructive: 'border-transparent bg-red-600 text-white hover:bg-red-700',
-        outline: 'text-violet-700 border-violet-300 dark:text-violet-300 dark:border-violet-700',
-        success: 'border-transparent bg-green-600 text-white hover:bg-green-700',
-        warning: 'border-transparent bg-yellow-600 text-white hover:bg-yellow-700',
+        default: 'border-transparent bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
+        secondary:
+          'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        destructive:
+          'border-transparent bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
+        outline: 'border-border bg-background/40 text-foreground hover:bg-accent/10',
+        success: 'border-transparent bg-fc-win text-white shadow-sm hover:opacity-90',
+        warning: 'border-transparent bg-fc-draw text-fc-bg shadow-sm hover:opacity-90',
       },
     },
     defaultVariants: {
