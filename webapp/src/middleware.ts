@@ -12,7 +12,7 @@ function hasSessionCookie(req: NextRequest): boolean {
   })
 }
 
-export async function proxy(req: NextRequest) {
+export function middleware(req: NextRequest) {
   const { nextUrl } = req
   const isAdminRoute = ADMIN_ROUTES.some((route) => nextUrl.pathname.startsWith(route))
   const isProtectedRoute = PROTECTED_ROUTES.some((route) => nextUrl.pathname.startsWith(route))
