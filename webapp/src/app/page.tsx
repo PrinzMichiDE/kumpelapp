@@ -39,16 +39,18 @@ export default function HomePage() {
             <p className="mt-6 text-lg md:text-xl text-fc-fg/70 max-w-2xl mx-auto">
               Die ultimative Fan-App für den FC Erzgebirge Aue. Spieltag, Tabelle, Kader, News, Tickets, Tippspiel und mehr – alles an einem Ort.
             </p>
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link href="/spielplan">
-                <button className="w-full sm:w-auto px-8 py-3 text-base font-medium text-white bg-fc-violet rounded-lg hover:bg-fc-violet-dark transition-colors focus:outline-none focus:ring-2 focus:ring-fc-violet focus:ring-offset-2 focus:ring-offset-fc-bg">
-                  Zum Spieltag
-                </button>
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+              <Link
+                href="/spielplan"
+                className="inline-flex w-full items-center justify-center rounded-xl bg-fc-violet px-7 py-3 text-base font-semibold text-white shadow-sm shadow-fc-violet/20 transition-[background-color,box-shadow,transform] duration-200 hover:bg-fc-violet-dark hover:shadow-md hover:shadow-fc-violet/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg active:scale-[0.98] sm:w-auto"
+              >
+                Zum Spieltag
               </Link>
-              <Link href="/tabelle">
-                <button className="w-full sm:w-auto px-8 py-3 text-base font-medium text-fc-violet bg-fc-violet/10 rounded-lg hover:bg-fc-violet/20 transition-colors focus:outline-none focus:ring-2 focus:ring-fc-violet focus:ring-offset-2 focus:ring-offset-fc-bg">
-                  Tabelle ansehen
-                </button>
+              <Link
+                href="/tabelle"
+                className="inline-flex w-full items-center justify-center rounded-xl border border-fc-violet/30 bg-fc-violet/10 px-7 py-3 text-base font-semibold text-fc-fg transition-[background-color,border-color,box-shadow,transform] duration-200 hover:border-fc-violet/45 hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg active:scale-[0.98] sm:w-auto"
+              >
+                Tabelle ansehen
               </Link>
             </div>
           </div>
@@ -131,16 +133,18 @@ export default function HomePage() {
           <p className="mt-4 text-lg text-fc-fg/70 max-w-2xl mx-auto">
             Registriere dich kostenlos und verpasse kein Spiel, keine News und keine Aktion mehr.
           </p>
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/register">
-              <button className="w-full sm:w-auto px-8 py-3 text-base font-medium text-white bg-fc-violet rounded-lg hover:bg-fc-violet-dark transition-colors focus:outline-none focus:ring-2 focus:ring-fc-violet focus:ring-offset-2 focus:ring-offset-fc-bg">
-                Jetzt registrieren
-              </button>
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+            <Link
+              href="/register"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-fc-violet px-7 py-3 text-base font-semibold text-white shadow-sm shadow-fc-violet/20 transition-[background-color,box-shadow,transform] duration-200 hover:bg-fc-violet-dark hover:shadow-md hover:shadow-fc-violet/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg active:scale-[0.98] sm:w-auto"
+            >
+              Jetzt registrieren
             </Link>
-            <Link href="/login">
-              <button className="w-full sm:w-auto px-8 py-3 text-base font-medium text-fc-violet bg-fc-violet/10 rounded-lg hover:bg-fc-violet/20 transition-colors focus:outline-none focus:ring-2 focus:ring-fc-violet focus:ring-offset-2 focus:ring-offset-fc-bg">
-                Anmelden
-              </button>
+            <Link
+              href="/login"
+              className="inline-flex w-full items-center justify-center rounded-xl border border-fc-violet/30 bg-fc-violet/10 px-7 py-3 text-base font-semibold text-fc-fg transition-[background-color,border-color,box-shadow,transform] duration-200 hover:border-fc-violet/45 hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg active:scale-[0.98] sm:w-auto"
+            >
+              Anmelden
             </Link>
           </div>
         </div>
