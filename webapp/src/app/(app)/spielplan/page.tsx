@@ -58,10 +58,14 @@ function MatchCard({ match }: MatchCardProps) {
   }
 
   return (
-    <Link href={`/spiel/${match.id}`} className="block">
-      <Card className="transition-all hover:shadow-lg hover:border-fc-violet/50 group">
-        <CardContent className="p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <Link
+      href={`/spiel/${match.id}`}
+      className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+      aria-label={`Spiel: ${match.homeTeam.name} gegen ${match.awayTeam.name}${match.matchday ? `, ${match.matchday}. Spieltag` : ''}`}
+    >
+      <Card className="transition-[transform,border-color,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:border-fc-violet/45 group-hover:shadow-lg group-hover:shadow-fc-violet/5 group-focus-visible:-translate-y-0.5 group-focus-visible:border-fc-violet/45 group-focus-visible:shadow-lg">
+        <CardContent className="p-4 sm:p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-4 flex-1 min-w-0">
               <div className="flex flex-col items-center sm:items-start gap-1 flex-shrink-0 w-20">
                 <span className="text-xs font-medium text-fc-fg/60">{formatMatchDay(match.kickoff)}</span>
@@ -149,23 +153,43 @@ export default function SpielplanPage() {
           <p className="mt-2 text-fc-fg/70">Alle Spiele der Saison 2026/27 – Regionalliga Nordost</p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <select className="px-4 py-2 rounded-lg border border-fc-border bg-fc-surface text-fc-fg focus:outline-none focus:ring-2 focus:ring-fc-violet" defaultValue="all">
-            <option value="all">Alle Wettbewerbe</option>
-            <option value="league">Liga</option>
-            <option value="cup">Pokal</option>
-          </select>
-          <select className="px-4 py-2 rounded-lg border border-fc-border bg-fc-surface text-fc-fg focus:outline-none focus:ring-2 focus:ring-fc-violet" defaultValue="all">
-            <option value="all">Alle Spieltage</option>
-            <option value="upcoming">Kommende</option>
-            <option value="past">Vergangene</option>
-          </select>
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-xs">
+            <label htmlFor="competition-filter" className="text-sm font-medium text-fc-fg/80">
+              Wettbewerb
+            </label>
+            <select
+              id="competition-filter"
+              name="competition"
+              className="h-11 rounded-lg border border-fc-border bg-fc-surface px-4 text-sm text-fc-fg shadow-sm transition-[border-color,box-shadow] duration-200 focus-visible:border-fc-violet/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+              defaultValue="all"
+            >
+              <option value="all">Alle Wettbewerbe</option>
+              <option value="league">Liga</option>
+              <option value="cup">Pokal</option>
+            </select>
+          </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-xs">
+            <label htmlFor="matchday-filter" className="text-sm font-medium text-fc-fg/80">
+              Zeitraum
+            </label>
+            <select
+              id="matchday-filter"
+              name="timeframe"
+              className="h-11 rounded-lg border border-fc-border bg-fc-surface px-4 text-sm text-fc-fg shadow-sm transition-[border-color,box-shadow] duration-200 focus-visible:border-fc-violet/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+              defaultValue="all"
+            >
+              <option value="all">Alle Spieltage</option>
+              <option value="upcoming">Kommende</option>
+              <option value="past">Vergangene</option>
+            </select>
+          </div>
         </div>
 
-        <div className="space-y-4" id="matches-list">
-          <div className="flex items-center justify-center py-12 text-fc-fg/60">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-fc-violet" />
-            <span className="ml-3">Lade Spiele...</span>
+        <div className="space-y-4" id="matches-list" aria-live="polite">
+          <div className="flex items-center justify-center gap-3 rounded-xl border border-fc-border/70 bg-fc-surface/40 py-12 text-fc-fg/70" role="status">
+            <div className="h-7 w-7 animate-spin rounded-full border-2 border-fc-violet/25 border-t-fc-violet" aria-hidden="true" />
+            <span className="text-sm font-medium">Lade Spiele…</span>
           </div>
         </div>
       </div>
