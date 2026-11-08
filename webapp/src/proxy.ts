@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { auth } from '@kumpelapp/auth'
+import { getCookieCache, getSessionCookie } from '@kumpelapp/auth/cookies'
 
 const ADMIN_ROUTES = ['/admin', '/api/v1/admin']
 const PROTECTED_ROUTES = ['/profil', '/kumpels', '/tippspiel', '/wallet']
@@ -15,8 +15,8 @@ export async function proxy(req: NextRequest) {
   const isProtectedRoute = PROTECTED_ROUTES.some((route) => nextUrl.pathname.startsWith(route))
 
   if (isAdminRoute || isProtectedRoute) {
-    const session = await auth.api.getSession({ headers: req.headers })
-    const isLoggedIn = !!session
+    const sessionToken = getSessionCookie(req)
+    const isLoggedIn = !!sessionToken
 
     if (isAdminRoute) {
       if (!isLoggedIn) {
@@ -25,8 +25,16 @@ export async function proxy(req: NextRequest) {
         return NextResponse.redirect(loginUrl)
       }
 
-      if (!isAdminRole(session?.user?.role)) {
-        return NextResponse.redirect(new URL('/403', nextUrl))
+      try {
+        const cached = await getCookieCache(req)
+        if (cached?.user) {
+          const role = (cached.user as Record<string, unknown>)['role']
+          if (!isAdminRole(role)) {
+            return NextResponse.redirect(new URL('/403', nextUrl))
+          }
+        }
+      } catch {
+        // Cookie cache unavailable or undecodable; defer to server-side authorization.
       }
     }
 
