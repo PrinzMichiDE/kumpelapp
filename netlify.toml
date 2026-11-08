@@ -1,28 +1,98 @@
-# Netlify-Konfiguration — KumpelApp
-#
-# Monorepo-Setup nach Netlify-Empfehlung:
-#   • Base directory:               leer lassen (Repo-Root) → pnpm installiert
-#                                   das komplette Workspace
-#   • Package directory (nur UI):   webapp → Framework-Erkennung + Suche nach
-#                                   netlify.toml
-#   • Der Build läuft im Root, damit Turborepo zuerst alle @kumpelapp/*-Pakete
-#     baut (inkl. `prisma generate` in @kumpelapp/db) und danach Next.js.
-#     Ein Build direkt in webapp/ würde die `workspace:*`-Abhängigkeiten nicht
-#     auflösen.
-
 [build]
-  command = "pnpm turbo run build --filter=webapp"
+  command = "pnpm build --filter=webapp"
   publish = "webapp/.next"
 
-[build.environment]
-  # Next.js 16 setzt Node >= 20.9 voraus
-  NODE_VERSION = "22"
-  # Muss zu "packageManager" in package.json passen (corepack)
-  PNPM_VERSION = "9.12.0"
-  NEXT_TELEMETRY_DISABLED = "1"
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
-# Der Next.js-Adapter (OpenNext) wird von Netlify automatisch provisioniert und
-# aktualisiert — deshalb hier bewusst kein `[[plugins]]`-Eintrag.
-#
-# Laufzeit-Env-Vars (DATABASE_URL, BETTER_AUTH_*, OAuth, Firebase, Wallet, …)
-# werden im Netlify-UI gepflegt; vollständige Liste siehe .env.example.
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/api/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/sw.js"
+  to = "/sw.js"
+  status = 200
+  headers = {Cache-Control = "public, max-age=0, must-revalidate"}
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    Service-Worker-Allowed = "/"
+
+[[headers]]
+  for = "/manifest.json"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/brand/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/api/v1/sync/*"
+  [headers.values]
+    Cache-Control = "public, max-age=300, stale-while-revalidate=3600"
+
+[[headers]]
+  for = "/api/v1/*"
+  [headers.values]
+    Cache-Control = "no-store, must-revalidate"
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
+
+# Environment variables for Netlify
+[build.environment]
+  NODE_VERSION = "20"
+  NPM_FLAGS = "--frozen-lockfile"
+
+# Edge functions
+[[edge_functions]]
+  function = "sync-bootstrap"
+  path = "/api/v1/sync/bootstrap*"
+
+# PostgreSQL connection (Netlify)
+[context.production.environment]
+  DATABASE_URL = "@netlify-postgres-url"
+  BETTER_AUTH_SECRET = "@better-auth-secret"
+  BETTER_AUTH_URL = "https://kumpelapp.vercel.app"
+  LEAGUE_PROVIDER = "openligadb"
+  OPENLIGADB_LEAGUE_SHORTCUT = "rlno"
+  SEASON = "2026/2027"
+  UPSTASH_REDIS_REST_URL = "@upstash-redis-url"
+  UPSTASH_REDIS_REST_TOKEN = "@upstash-redis-token"
+  BLOB_READ_WRITE_TOKEN = "@vercel-blob-token"
+  FIREBASE_PROJECT_ID = "@firebase-project-id"
+  FIREBASE_CLIENT_EMAIL = "@firebase-client-email"
+  FIREBASE_PRIVATE_KEY = "@firebase-private-key"
+  NEXT_PUBLIC_FIREBASE_API_KEY = "@firebase-api-key"
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN = "@firebase-auth-domain"
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID = "@firebase-project-id"
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET = "@firebase-storage-bucket"
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = "@firebase-messaging-sender-id"
+  NEXT_PUBLIC_FIREBASE_APP_ID = "@firebase-app-id"
+  NEXT_PUBLIC_FIREBASE_VAPID_KEY = "@firebase-vapid-key"
+  NEXT_PUBLIC_APP_URL = "https://kumpelapp.vercel.app"
+  NEXT_PUBLIC_UMAMI_URL = "@umami-url"
+  NEXT_PUBLIC_UMAMI_SITE_ID = "@umami-site-id"
+
+[context.deploy-preview.environment]
+  DATABASE_URL = "@netlify-postgres-url"
+  BETTER_AUTH_SECRET = "@better-auth-secret"
+  BETTER_AUTH_URL = "https://deploy-preview.netlify.app"
+  LEAGUE_PROVIDER = "openligadb"
+  OPENLIGADB_LEAGUE_SHORTCUT = "rlno"
+  SEASON = "2026/2027"
+
+[context.branch-deploy.environment]
+  DATABASE_URL = "@netlify-postgres-url"
+  BETTER_AUTH_SECRET = "@better-auth-secret"
+  BETTER_AUTH_URL = "https://branch-deploy.netlify.app"
+  LEAGUE_PROVIDER = "openligadb"
+  OPENLIGADB_LEAGUE_SHORTCUT = "rlno"
+  SEASON = "2026/2027"
