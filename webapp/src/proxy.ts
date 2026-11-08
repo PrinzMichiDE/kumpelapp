@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { getCookieCache, getSessionCookie } from '@kumpelapp/auth/cookies'
 
 const ADMIN_ROUTES = ['/admin', '/api/v1/admin']
 const PROTECTED_ROUTES = ['/profil', '/kumpels', '/tippspiel', '/wallet']
 
-function isAdminRole(role: unknown): boolean {
-  return role === 'EDITOR' || role === 'ADMIN'
+function hasSessionCookie(req: NextRequest): boolean {
+  const all = req.cookies.getAll()
+  return all.some(({ name }) => {
+    const n = name.startsWith('__Secure-') ? name.slice('__Secure-'.length) : name
+    return n === 'better-auth.session_token' || n === 'better-auth-session_token'
+  })
 }
 
 export async function proxy(req: NextRequest) {
@@ -15,30 +18,9 @@ export async function proxy(req: NextRequest) {
   const isProtectedRoute = PROTECTED_ROUTES.some((route) => nextUrl.pathname.startsWith(route))
 
   if (isAdminRoute || isProtectedRoute) {
-    const sessionToken = getSessionCookie(req)
-    const isLoggedIn = !!sessionToken
+    const isLoggedIn = hasSessionCookie(req)
 
-    if (isAdminRoute) {
-      if (!isLoggedIn) {
-        const loginUrl = new URL('/login', nextUrl)
-        loginUrl.searchParams.set('callbackUrl', nextUrl.pathname)
-        return NextResponse.redirect(loginUrl)
-      }
-
-      try {
-        const cached = await getCookieCache(req)
-        if (cached?.user) {
-          const role = (cached.user as Record<string, unknown>)['role']
-          if (!isAdminRole(role)) {
-            return NextResponse.redirect(new URL('/403', nextUrl))
-          }
-        }
-      } catch {
-        // Cookie cache unavailable or undecodable; defer to server-side authorization.
-      }
-    }
-
-    if (isProtectedRoute && !isLoggedIn) {
+    if (!isLoggedIn) {
       const loginUrl = new URL('/login', nextUrl)
       loginUrl.searchParams.set('callbackUrl', nextUrl.pathname)
       return NextResponse.redirect(loginUrl)
