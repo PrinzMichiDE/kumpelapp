@@ -41,7 +41,8 @@
     "@kumpelapp/wallet-pass": "workspace:*",
     "@kumpelapp/ui": "workspace:*",
     "@kumpelapp/utils": "workspace:*",
-    "@kumpelapp/firebase-admin": "workspace:*"
+    "@kumpelapp/firebase-admin": "workspace:*",
+    "better-auth": "^1.0.0"
   },
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
