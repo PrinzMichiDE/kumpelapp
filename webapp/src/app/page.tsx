@@ -1,9 +1,7 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { Calendar, Trophy, Users, Newspaper, MapPin, Building, History, Heart, AlertTriangle, CheckCircle } from 'lucide-react'
+import { AlertTriangle, Building, Calendar, CheckCircle, Heart, History, MapPin, Newspaper, Trophy, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
-import { formatDate, formatKickoff, formatMatchDay } from '@kumpelapp/utils'
-import { cn } from '@kumpelapp/utils'
 
 export const metadata: Metadata = {
   title: 'Startseite',
@@ -72,18 +70,25 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 sm:gap-6">
             {features.map((feature) => (
-              <Link key={feature.name} href={feature.href} className="group">
-                <Card className="h-full transition-all hover:shadow-lg hover:border-fc-violet/50 group-hover:-translate-y-1">
+              <Link
+                key={feature.name}
+                href={feature.href}
+                className="group block rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+              >
+                <Card className="h-full border-fc-border/70 transition-[transform,border-color,box-shadow,background-color] duration-200 group-hover:-translate-y-1 group-hover:border-fc-violet/45 group-hover:shadow-lg group-hover:shadow-fc-violet/5 group-focus-visible:-translate-y-1 group-focus-visible:border-fc-violet/45 group-focus-visible:shadow-lg group-active:translate-y-0">
                   <CardHeader className="pb-3">
-                    <div className="mx-auto mb-3 w-12 h-12 rounded-lg bg-fc-violet/10 flex items-center justify-center group-hover:bg-fc-violet group-hover:text-white transition-colors">
-                      <feature.icon className="h-6 w-6 text-fc-violet group-hover:text-white transition-colors" aria-hidden="true" />
+                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-fc-violet/12 ring-1 ring-fc-violet/15 transition-[background-color,color,box-shadow,transform] duration-200 group-hover:bg-fc-violet group-hover:shadow-sm group-hover:shadow-fc-violet/25 group-focus-visible:bg-fc-violet">
+                      <feature.icon
+                        className="h-6 w-6 text-fc-violet transition-colors duration-200 group-hover:text-white group-focus-visible:text-white"
+                        aria-hidden="true"
+                      />
                     </div>
-                    <CardTitle className="text-center text-lg">{feature.name}</CardTitle>
+                    <CardTitle className="text-center text-lg text-fc-fg">{feature.name}</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-center text-sm text-fc-fg/60">{feature.description}</p>
+                    <p className="text-center text-sm leading-relaxed text-fc-fg/65">{feature.description}</p>
                   </CardContent>
                 </Card>
               </Link>
@@ -101,26 +106,39 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
+          <div className="mx-auto grid max-w-3xl grid-cols-1 gap-5 sm:grid-cols-3 sm:gap-6">
             {quickLinks.map((link) => (
               <a
                 key={link.name}
                 href={link.href}
                 target={link.external ? '_blank' : undefined}
                 rel={link.external ? 'noopener noreferrer' : undefined}
-                className="group flex flex-col items-center p-6 rounded-lg bg-fc-bg border border-fc-border hover:border-fc-violet/50 hover:shadow-lg transition-all"
+                className="group flex flex-col items-center rounded-xl border border-fc-border bg-fc-bg p-6 text-center transition-[transform,border-color,box-shadow,background-color] duration-200 hover:-translate-y-0.5 hover:border-fc-violet/45 hover:shadow-lg hover:shadow-fc-violet/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface active:translate-y-0"
               >
-                <div className="mb-3 w-12 h-12 rounded-lg bg-fc-violet/10 flex items-center justify-center group-hover:bg-fc-violet group-hover:text-white transition-colors">
-                  <link.icon className="h-6 w-6 text-fc-violet group-hover:text-white transition-colors" aria-hidden="true" />
+                <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-fc-violet/12 ring-1 ring-fc-violet/15 transition-[background-color,color,box-shadow] duration-200 group-hover:bg-fc-violet group-hover:shadow-sm group-hover:shadow-fc-violet/25 group-focus-visible:bg-fc-violet">
+                  <link.icon
+                    className="h-6 w-6 text-fc-violet transition-colors duration-200 group-hover:text-white group-focus-visible:text-white"
+                    aria-hidden="true"
+                  />
                 </div>
-                <span className="font-medium text-fc-fg text-center">{link.name}</span>
-                {link.external && (
-                  <svg className="mt-2 h-4 w-4 text-fc-fg/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                    <polyline points="15 3 21 3 21 9" />
-                    <line x1="10" y1="14" x2="21" y2="3" />
-                  </svg>
-                )}
+                <span className="font-medium text-fc-fg">{link.name}</span>
+                {link.external ? (
+                  <>
+                    <span className="sr-only">(öffnet in neuem Tab)</span>
+                    <svg
+                      className="mt-2 h-4 w-4 text-fc-fg/50 transition-colors group-hover:text-fc-violet/70"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
+                  </>
+                ) : null}
               </a>
             ))}
           </div>
