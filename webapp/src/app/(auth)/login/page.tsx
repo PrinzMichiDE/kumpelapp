@@ -1,18 +1,23 @@
 import { unstable_noStore } from 'next/cache'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@kumpelapp/ui'
 import { LoginForm } from './login-form'
 
 export default function LoginPage() {
   unstable_noStore()
-  
+
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-fc-fg">Anmelden</h1>
-          <p className="mt-2 text-fc-fg/70">Melde dich an, um auf alle Funktionen zuzugreifen</p>
-        </div>
-        <LoginForm />
-      </div>
+    <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center px-4 py-10 sm:px-6 sm:py-14">
+      <Card className="w-full max-w-md border-fc-border/80 bg-card/95 shadow-lg shadow-black/10">
+        <CardHeader className="space-y-2 text-center">
+          <CardTitle className="text-2xl font-bold tracking-tight text-fc-fg">Anmelden</CardTitle>
+          <CardDescription className="text-fc-fg/70">
+            Melde dich an, um auf alle Funktionen der KumpelApp zuzugreifen.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LoginForm />
+        </CardContent>
+      </Card>
     </div>
   )
 }
