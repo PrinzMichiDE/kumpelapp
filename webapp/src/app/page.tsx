@@ -2,6 +2,9 @@ import { Metadata } from 'next'
 import Link from 'next/link'
 import { AlertTriangle, Building, Calendar, CheckCircle, Heart, History, MapPin, Newspaper, Trophy, Users } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
+import { Footer } from '@/components/footer'
+import { Header } from '@/components/header'
+import { OfflineBanner } from '@/components/offline-banner'
 
 export const metadata: Metadata = {
   title: 'Startseite',
@@ -27,8 +30,11 @@ const quickLinks = [
 
 export default function HomePage() {
   return (
-    <main id="main-content" className="flex-1">
-      <section className="relative overflow-hidden bg-gradient-to-b from-fc-violet/10 via-fc-bg to-fc-bg py-16 md:py-24">
+    <>
+      <OfflineBanner />
+      <Header />
+      <main id="main-content" className="flex-1">
+        <section className="relative overflow-hidden bg-gradient-to-b from-fc-violet/10 via-fc-bg to-fc-bg py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-fc-fg">
@@ -166,8 +172,10 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-      </section>
-    </main>
+        </section>
+      </main>
+      <Footer />
+    </>
   )
 }
 
