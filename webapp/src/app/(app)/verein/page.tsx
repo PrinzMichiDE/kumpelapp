@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
-import { Building, ChevronRight, ExternalLink, GraduationCap, Heart, MapPin, Shield, Users } from 'lucide-react'
+import { BookOpen, Building, ChevronRight, ExternalLink, GraduationCap, Heart, MapPin, Shield, Users } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@kumpelapp/utils'
 
