@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { WifiOff, Wifi } from 'lucide-react'
+import { WifiOff } from 'lucide-react'
 import { cn } from '@kumpelapp/utils'
 
 export function OfflineBanner() {
@@ -33,20 +33,29 @@ export function OfflineBanner() {
 
   if (isOnline) return null
 
-  const timeString = lastOnline ? lastOnline.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' }) : 'unbekannt'
+  const timeString = lastOnline
+    ? lastOnline.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })
+    : 'unbekannt'
 
   return (
     <div
       className={cn(
-        'fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 px-4 py-2 bg-fc-loss/90 text-white text-sm font-medium shadow-lg',
-        'animate-slide-down'
+        'pointer-events-none fixed inset-x-0 top-0 z-[60] px-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-4',
+        'animate-fc-slide-down'
       )}
-      role="alert"
       aria-live="polite"
     >
-      <WifiOff className="h-4 w-4 flex-shrink-0" aria-hidden="true" />
-      <span>Offline – Letzte Synchronisation: {timeString}</span>
-      <Wifi className="h-4 w-4 flex-shrink-0 opacity-50" aria-hidden="true" />
+      <div
+        className="pointer-events-auto mx-auto flex max-w-3xl items-center justify-center gap-2.5 rounded-xl border border-white/15 bg-fc-loss/95 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-black/20 backdrop-blur-sm"
+        role="status"
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/12">
+          <WifiOff className="h-4 w-4" aria-hidden="true" />
+        </span>
+        <span className="text-center leading-snug">
+          Offline – letzte Synchronisation: <span className="font-semibold tabular-nums">{timeString}</span>
+        </span>
+      </div>
     </div>
   )
 }
