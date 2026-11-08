@@ -65,10 +65,6 @@ export default function RootLayout({
 }) {
   return (
     <html lang="de" className={`${inter.variable} h-full antialiased`} data-theme="dark">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-      </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <a href="#main-content" className="skip-link">
           Zum Hauptinhalt springen
