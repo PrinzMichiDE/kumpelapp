@@ -1,49 +1,76 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
-import { Badge } from '@kumpelapp/ui'
-import { Building, Users, Shield, BookOpen, GraduationCap, Heart, MapPin, ExternalLink } from 'lucide-react'
+import { Building, ChevronRight, ExternalLink, GraduationCap, Heart, MapPin, Shield, Users } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@kumpelapp/utils'
 
-function SectionCard({ title, icon: Icon, children, href, external }: { title: string; icon: React.ComponentType<{ className?: string }>; children: React.ReactNode; href?: string; external?: boolean }) {
-  if (!href) {
-    return (
-      <Card className="h-full transition-all hover:shadow-lg hover:border-fc-violet/50 group">
-        <CardHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-fc-violet/10 flex items-center justify-center group-hover:bg-fc-violet group-hover:text-white transition-colors">
-              <Icon className="h-6 w-6 text-fc-violet group-hover:text-white transition-colors" aria-hidden="true" />
-            </div>
-            <CardTitle className="text-lg">{title}</CardTitle>
+const focusRing =
+  'rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg'
+
+function SectionCard({
+  title,
+  icon: Icon,
+  children,
+  href,
+  external,
+}: {
+  title: string
+  icon: React.ComponentType<{ className?: string }>
+  children: React.ReactNode
+  href?: string
+  external?: boolean
+}) {
+  const content = (
+    <Card
+      className={cn(
+        'group h-full transition-[transform,border-color,box-shadow] duration-200',
+        href &&
+          'group-hover:-translate-y-0.5 group-hover:border-fc-violet/45 group-hover:shadow-lg group-hover:shadow-fc-violet/5 group-focus-visible:-translate-y-0.5 group-focus-visible:border-fc-violet/45 group-focus-visible:shadow-lg'
+      )}
+    >
+      <CardHeader className="pb-3">
+        <div className="mb-1 flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-fc-violet/12 ring-1 ring-fc-violet/15 transition-[background-color,color,box-shadow] duration-200 group-hover:bg-fc-violet group-hover:shadow-sm group-hover:shadow-fc-violet/20 group-focus-visible:bg-fc-violet">
+            <Icon
+              className="h-5 w-5 text-fc-violet transition-colors duration-200 group-hover:text-white group-focus-visible:text-white"
+              aria-hidden="true"
+            />
           </div>
-        </CardHeader>
-        <CardContent>
-          {children}
-        </CardContent>
-      </Card>
-    )
-  }
+          <CardTitle className="text-lg leading-tight">{title}</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="text-sm leading-relaxed text-fc-fg/70">{children}</div>
+        {href ? (
+          <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-fc-violet transition-colors group-hover:text-fc-violet-light group-focus-visible:text-fc-violet-light">
+            {external ? (
+              <>
+                Zur Website
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only">(öffnet in neuem Tab)</span>
+              </>
+            ) : (
+              <>
+                Mehr erfahren
+                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </>
+            )}
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+
+  if (!href) return content
 
   return (
-    <Link href={href} target={external ? '_blank' : undefined} rel={external ? 'noopener noreferrer' : undefined} className="block">
-      <Card className="h-full transition-all hover:shadow-lg hover:border-fc-violet/50 group">
-        <CardHeader>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-lg bg-fc-violet/10 flex items-center justify-center group-hover:bg-fc-violet group-hover:text-white transition-colors">
-              <Icon className="h-6 w-6 text-fc-violet group-hover:text-white transition-colors" aria-hidden="true" />
-            </div>
-            <CardTitle className="text-lg">{title}</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {children}
-          <div className="mt-4 flex items-center justify-between">
-            <span className="text-sm text-fc-violet hover:text-fc-violet-light font-medium flex items-center gap-1">
-              {external ? 'Zur Website' : 'Mehr erfahren'}
-              <ExternalLink className="h-4 w-4" aria-hidden="true" />
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+    <Link
+      href={href}
+      target={external ? '_blank' : undefined}
+      rel={external ? 'noopener noreferrer' : undefined}
+      className={cn('group block', focusRing)}
+      aria-label={`${title}${external ? ' (öffnet in neuem Tab)' : ''}`}
+    >
+      {content}
     </Link>
   )
 }
@@ -79,114 +106,86 @@ export default function VereinPage() {
         </div>
 
         <div className="space-y-6">
-          <section>
-            <h2 className="text-2xl font-bold text-fc-fg mb-4">Kontakte & Ansprechpartner</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-fc-violet/10 flex items-center justify-center">
-                      <Users className="h-6 w-6 text-fc-violet" />
+          <section aria-labelledby="contacts-heading">
+            <h2 id="contacts-heading" className="mb-4 text-2xl font-bold tracking-tight text-fc-fg">
+              Kontakte &amp; Ansprechpartner
+            </h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {[
+                { title: 'Fanbeauftragter', description: 'Ansprechpartner für Fans & Fanclubs', icon: Users },
+                { title: 'Fanprojekt', description: 'Sozialpädagogische Begleitung', icon: Heart },
+                { title: 'Team Barrierefrei', description: 'Inklusion & Barrierefreiheit', icon: Shield },
+              ].map((item) => (
+                <Card key={item.title} className="h-full">
+                  <CardContent className="flex items-center gap-3 pt-6">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-fc-violet/12 ring-1 ring-fc-violet/15">
+                      <item.icon className="h-5 w-5 text-fc-violet" aria-hidden="true" />
                     </div>
-                    <div>
-                      <p className="font-medium text-fc-fg">Fanbeauftragter</p>
-                      <p className="text-sm text-fc-fg/60">Ansprechpartner für Fans & Fanclubs</p>
+                    <div className="min-w-0">
+                      <p className="font-medium text-fc-fg">{item.title}</p>
+                      <p className="text-sm leading-relaxed text-fc-fg/65">{item.description}</p>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-fc-violet/10 flex items-center justify-center">
-                      <Heart className="h-6 w-6 text-fc-violet" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-fc-fg">Fanprojekt</p>
-                      <p className="text-sm text-fc-fg/60">Sozialpädagogische Begleitung</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-fc-violet/10 flex items-center justify-center">
-                      <Shield className="h-6 w-6 text-fc-violet" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-fc-fg">Team Barrierefrei</p>
-                      <p className="text-sm text-fc-fg/60">Inklusion & Barrierefreiheit</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </section>
 
-          <section>
-            <h2 className="text-2xl font-bold text-fc-fg mb-4">Offizielle Links</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Link href="https://customer59.ticketing.cloud.sap/shop?shopid=103" target="_blank" rel="noopener noreferrer">
-                <Card className="h-full transition-all hover:shadow-lg hover:border-fc-violet/50">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-fc-violet/10 flex items-center justify-center">
-                        <ExternalLink className="h-6 w-6 text-fc-violet" />
+          <section aria-labelledby="official-links-heading">
+            <h2 id="official-links-heading" className="mb-4 text-2xl font-bold tracking-tight text-fc-fg">
+              Offizielle Links
+            </h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  title: 'Ticketshop',
+                  description: 'Offizieller Vorverkauf',
+                  href: 'https://customer59.ticketing.cloud.sap/shop?shopid=103',
+                  icon: ExternalLink,
+                },
+                {
+                  title: 'Fanshop',
+                  description: 'Offizieller Merchandise',
+                  href: 'https://www.fc-erzgebirge.shop',
+                  icon: Heart,
+                },
+                {
+                  title: 'Mitglied werden',
+                  description: 'Jetzt Kumpel werden',
+                  href: 'https://www.fc-erzgebirge.de/verein/mitglieder',
+                  icon: Users,
+                },
+                {
+                  title: 'Stadionführungen',
+                  description: 'Blick hinter die Kulissen',
+                  href: 'https://www.fc-erzgebirge.de/verein/stadion/erzgebirgsstadion',
+                  icon: MapPin,
+                },
+              ].map((item) => (
+                <Link
+                  key={item.title}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={cn('group block', focusRing)}
+                  aria-label={`${item.title} (öffnet in neuem Tab)`}
+                >
+                  <Card className="h-full transition-[transform,border-color,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:border-fc-violet/45 group-hover:shadow-lg group-hover:shadow-fc-violet/5 group-focus-visible:-translate-y-0.5 group-focus-visible:border-fc-violet/45 group-focus-visible:shadow-lg">
+                    <CardContent className="flex items-center gap-3 pt-6">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-fc-violet/12 ring-1 ring-fc-violet/15 transition-[background-color,color] duration-200 group-hover:bg-fc-violet group-focus-visible:bg-fc-violet">
+                        <item.icon
+                          className="h-5 w-5 text-fc-violet transition-colors duration-200 group-hover:text-white group-focus-visible:text-white"
+                          aria-hidden="true"
+                        />
                       </div>
-                      <div>
-                        <p className="font-medium text-fc-fg">Ticketshop</p>
-                        <p className="text-sm text-fc-fg/60">Offizieller Vorverkauf</p>
+                      <div className="min-w-0">
+                        <p className="font-medium text-fc-fg">{item.title}</p>
+                        <p className="text-sm leading-relaxed text-fc-fg/65">{item.description}</p>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link href="https://www.fc-erzgebirge.shop" target="_blank" rel="noopener noreferrer">
-                <Card className="h-full transition-all hover:shadow-lg hover:border-fc-violet/50">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-fc-violet/10 flex items-center justify-center">
-                        <Heart className="h-6 w-6 text-fc-violet" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-fc-fg">Fanshop</p>
-                        <p className="text-sm text-fc-fg/60">Offizieller Merchandise</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link href="https://www.fc-erzgebirge.de/verein/mitglieder" target="_blank" rel="noopener noreferrer">
-                <Card className="h-full transition-all hover:shadow-lg hover:border-fc-violet/50">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-fc-violet/10 flex items-center justify-center">
-                        <Users className="h-6 w-6 text-fc-violet" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-fc-fg">Mitglied werden</p>
-                        <p className="text-sm text-fc-fg/60">Jetzt Kumpel werden</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-              <Link href="https://www.fc-erzgebirge.de/verein/stadion/erzgebirgsstadion" target="_blank" rel="noopener noreferrer">
-                <Card className="h-full transition-all hover:shadow-lg hover:border-fc-violet/50">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-fc-violet/10 flex items-center justify-center">
-                        <MapPin className="h-6 w-6 text-fc-violet" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-fc-fg">Stadionführungen</p>
-                        <p className="text-sm text-fc-fg/60">Blick hinter die Kulissen</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))}
             </div>
           </section>
         </div>
