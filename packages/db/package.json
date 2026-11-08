@@ -16,14 +16,16 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@kumpelapp/api-contracts": "workspace:*",
     "@prisma/client": "^5.18.0",
-    "@kumpelapp/api-contracts": "workspace:*"
+    "bcryptjs": "^3.0.3"
   },
   "devDependencies": {
-    "prisma": "^5.18.0",
-    "typescript": "^5.6.2",
-    "vitest": "^2.0.0",
+    "@types/bcryptjs": "^3.0.0",
     "eslint": "^9.0.0",
-    "tsx": "^4.19.1"
+    "prisma": "^5.18.0",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.2",
+    "vitest": "^2.0.0"
   }
 }
