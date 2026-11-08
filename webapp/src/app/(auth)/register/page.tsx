@@ -3,10 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react'
-import { Button } from '@kumpelapp/ui'
-import { Input } from '@kumpelapp/ui'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@kumpelapp/ui'
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react'
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@kumpelapp/ui'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -26,7 +24,14 @@ export default function RegisterPage() {
     return null
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const passwordChecks = [
+    { label: 'Mindestens 8 Zeichen', ok: password.length >= 8 },
+    { label: 'Großbuchstabe', ok: /[A-Z]/.test(password) },
+    { label: 'Kleinbuchstabe', ok: /[a-z]/.test(password) },
+    { label: 'Zahl', ok: /[0-9]/.test(password) },
+  ]
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setError('')
 
@@ -50,7 +55,7 @@ export default function RegisterPage() {
         body: JSON.stringify({ name, email, password }),
       })
 
-      const data = await response.json()
+      const data = (await response.json()) as { message?: string }
 
       if (!response.ok) {
         setError(data.message || 'Registrierung fehlgeschlagen')
@@ -65,44 +70,52 @@ export default function RegisterPage() {
     }
   }
 
-  const passwordError = password && validatePassword(password)
+  const passwordError = password ? validatePassword(password) : null
+  const passwordMismatch = Boolean(confirmPassword) && password !== confirmPassword
+  const formErrorId = 'register-form-error'
+  const confirmErrorId = 'confirm-password-error'
+  const linkFocus =
+    'rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface'
 
   return (
-    <div className="min-h-[calc(100vh-200px)] flex items-center justify-center px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Registrieren</CardTitle>
-          <CardDescription>Erstelle dein kostenloses KumpelApp-Konto</CardDescription>
+    <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center px-4 py-10 sm:px-6 sm:py-14">
+      <Card className="w-full max-w-md border-fc-border/80 bg-card/95 shadow-lg shadow-black/10">
+        <CardHeader className="space-y-2 text-center">
+          <CardTitle className="text-2xl font-bold tracking-tight text-fc-fg">Registrieren</CardTitle>
+          <CardDescription className="text-fc-fg/70">Erstelle dein kostenloses KumpelApp-Konto</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          {error && (
-            <div className="flex items-center gap-2 p-3 rounded-lg bg-fc-loss/10 text-fc-loss text-sm" role="alert">
-              <svg className="h-4 w-4 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
-              </svg>
-              {error}
-            </div>
-          )}
+          <div aria-live="polite" aria-atomic="true">
+            {error ? (
+              <div
+                id={formErrorId}
+                className="flex items-start gap-3 rounded-xl border border-fc-loss/25 bg-fc-loss/10 p-3.5 text-sm text-fc-loss"
+                role="alert"
+              >
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                <p>{error}</p>
+              </div>
+            ) : null}
+          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" aria-busy={loading}>
             <div className="space-y-2">
               <label htmlFor="name" className="text-sm font-medium text-fc-fg">
-                Name (optional)
+                Name <span className="font-normal text-fc-fg/55">(optional)</span>
               </label>
               <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-fc-fg/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
+                <User
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fc-fg/45"
+                  aria-hidden="true"
+                />
                 <Input
                   id="name"
+                  name="name"
                   type="text"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Dein Name"
-                  className="pl-10"
+                  className="h-11 pl-10"
                   autoComplete="name"
                   disabled={loading}
                 />
@@ -114,20 +127,24 @@ export default function RegisterPage() {
                 E-Mail
               </label>
               <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-fc-fg/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                </svg>
+                <Mail
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fc-fg/45"
+                  aria-hidden="true"
+                />
                 <Input
                   id="email"
+                  name="email"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="deine@email.de"
-                  className="pl-10"
+                  className="h-11 pl-10"
                   required
                   autoComplete="email"
+                  inputMode="email"
                   disabled={loading}
+                  aria-invalid={Boolean(error && !passwordError && !passwordMismatch)}
+                  aria-describedby={error && !passwordError && !passwordMismatch ? formErrorId : undefined}
                 />
               </div>
             </div>
@@ -137,59 +154,56 @@ export default function RegisterPage() {
                 Passwort
               </label>
               <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-fc-fg/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                </svg>
+                <Lock
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fc-fg/45"
+                  aria-hidden="true"
+                />
                 <Input
                   id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="pl-10 pr-10"
+                  className="h-11 pl-10 pr-11"
                   required
                   autoComplete="new-password"
                   disabled={loading}
-                  aria-describedby={passwordError ? 'password-error' : undefined}
+                  aria-invalid={Boolean(passwordError)}
+                  aria-describedby="password-requirements"
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-fc-fg/40 hover:text-fc-fg"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute right-2 top-1/2 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-fc-fg/55 transition-colors hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface disabled:pointer-events-none disabled:opacity-50"
                   aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+                  aria-pressed={showPassword}
+                  disabled={loading}
                 >
-                  {showPassword ? (
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19M2 2l20 20" />
-                    </svg>
-                  ) : (
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
-                      <path d="M2 1l20 20" />
-                    </svg>
-                  )}
+                  {showPassword ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                 </button>
               </div>
-              {passwordError && (
-                <p id="password-error" className="text-sm text-fc-loss flex items-center gap-1" role="alert">
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
-                  {passwordError}
-                </p>
-              )}
-              {!passwordError && password.length >= 8 && (
-                <p className="text-sm text-fc-win flex items-center gap-1">
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
-                  </svg>
-                  Passwort ist stark
-                </p>
-              )}
+
+              <div id="password-requirements" className="rounded-lg border border-fc-border/70 bg-fc-bg/35 p-3">
+                <p className="mb-2 text-xs font-medium uppercase tracking-wide text-fc-fg/55">Passwort-Anforderungen</p>
+                <ul className="grid gap-1.5 sm:grid-cols-2" aria-label="Passwort-Anforderungen">
+                  {passwordChecks.map((item) => (
+                    <li key={item.label} className="flex items-center gap-2 text-sm">
+                      {item.ok ? (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-fc-win" aria-hidden="true" />
+                      ) : (
+                        <span className="h-4 w-4 shrink-0 rounded-full border border-fc-border/80" aria-hidden="true" />
+                      )}
+                      <span className={item.ok ? 'text-fc-fg/85' : 'text-fc-fg/60'}>{item.label}</span>
+                    </li>
+                  ))}
+                </ul>
+                {passwordError ? (
+                  <p className="mt-2 text-sm text-fc-loss" role="status">
+                    {passwordError}
+                  </p>
+                ) : null}
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -197,52 +211,61 @@ export default function RegisterPage() {
                 Passwort bestätigen
               </label>
               <div className="relative">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-fc-fg/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
-                  <path d="M7 11V7a5 5 0 0 1 9.9-1" />
-                </svg>
+                <Lock
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-fc-fg/45"
+                  aria-hidden="true"
+                />
                 <Input
                   id="confirmPassword"
+                  name="confirmPassword"
                   type={showPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="pl-10"
+                  className="h-11 pl-10"
                   required
                   autoComplete="new-password"
                   disabled={loading}
-                  aria-describedby={confirmPassword && password !== confirmPassword ? 'confirm-error' : undefined}
+                  aria-invalid={passwordMismatch}
+                  aria-describedby={passwordMismatch ? confirmErrorId : undefined}
                 />
               </div>
-              {confirmPassword && password !== confirmPassword && (
-                <p id="confirm-error" className="text-sm text-fc-loss flex items-center gap-1" role="alert">
-                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                    <circle cx="12" cy="12" r="10" />
-                    <line x1="12" y1="8" x2="12" y2="12" />
-                    <line x1="12" y1="16" x2="12.01" y2="16" />
-                  </svg>
+              {passwordMismatch ? (
+                <p id={confirmErrorId} className="flex items-center gap-2 text-sm text-fc-loss" role="alert">
+                  <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
                   Passwörter stimmen nicht überein
                 </p>
-              )}
+              ) : null}
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading} size="lg">
-              {loading ? 'Registrieren...' : 'Konto erstellen'}
+            <Button type="submit" className="h-11 w-full" disabled={loading} size="lg">
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                  Registrieren...
+                </>
+              ) : (
+                'Konto erstellen'
+              )}
             </Button>
           </form>
 
-          <p className="text-center text-sm text-fc-fg/60">
+          <p className="text-center text-sm text-fc-fg/65">
             Schon ein Konto?{' '}
-            <Link href="/login" className="text-fc-violet hover:underline font-medium">
+            <Link href="/login" className={`font-semibold text-fc-violet transition-colors hover:text-fc-violet-light ${linkFocus}`}>
               Anmelden
             </Link>
           </p>
 
-          <p className="text-center text-xs text-fc-fg/50">
+          <p className="text-center text-xs leading-relaxed text-fc-fg/55">
             Mit der Registrierung stimmst du unseren{' '}
-            <Link href="/agb" className="underline hover:text-fc-violet">AGB</Link>{' '}
+            <Link href="/agb" className={`underline underline-offset-2 transition-colors hover:text-fc-violet ${linkFocus}`}>
+              AGB
+            </Link>{' '}
             und der{' '}
-            <Link href="/datenschutz" className="underline hover:text-fc-violet">Datenschutzerklärung</Link>
+            <Link href="/datenschutz" className={`underline underline-offset-2 transition-colors hover:text-fc-violet ${linkFocus}`}>
+              Datenschutzerklärung
+            </Link>{' '}
             zu.
           </p>
         </CardContent>
