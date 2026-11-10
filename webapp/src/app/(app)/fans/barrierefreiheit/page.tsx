@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { prisma } from '@kumpelapp/db'
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
-import { Accessibility, ArrowLeft, Ear, ExternalLink, Globe, Mail, Phone, SearchX, Shield, Users, Wheelchair } from 'lucide-react'
+import { Accessibility, ArrowLeft, Ear, ExternalLink, Globe, Mail, Phone, SearchX, Shield, Users } from 'lucide-react'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,7 +54,7 @@ export default async function BarrierefreiheitPage() {
 
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[
-            { icon: Wheelchair, title: 'Rollstuhlplätze', text: 'Plätze, Begleitregelungen und Unterstützung vor Ort.' },
+            { icon: Accessibility, title: 'Rollstuhlplätze', text: 'Plätze, Begleitregelungen und Unterstützung vor Ort.' },
             { icon: Ear, title: 'Assistenz & Services', text: 'Angebote wie Audioguide, Induktionsschleifen oder Begleitung.' },
             { icon: Accessibility, title: 'Barrierefreier Besuch', text: 'Hinweise zu Zugängen, Orientierung und Stadionservices.' },
           ].map((item) => (
