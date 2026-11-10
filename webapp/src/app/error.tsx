@@ -24,7 +24,7 @@ export default function Error({
       <div
         role="alert"
         aria-live="assertive"
-        className="w-full max-w-xl rounded-2xl border border-fc-border/80 bg-fc-surface/80 p-6 text-center shadow-xl shadow-fc-violet/5 backdrop-blur-sm sm:p-8"
+        className="w-full max-w-xl rounded-2xl border border-fc-border/80 bg-fc-surface/85 p-6 text-center shadow-xl shadow-fc-violet/5 backdrop-blur-sm sm:p-8"
       >
         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-fc-loss/12 ring-1 ring-inset ring-fc-loss/25">
           <AlertTriangle className="h-7 w-7 text-fc-loss" aria-hidden="true" />
@@ -47,14 +47,14 @@ export default function Error({
           <button
             type="button"
             onClick={reset}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-fc-violet px-5 py-3 text-sm font-semibold text-white shadow-sm transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-fc-violet-light hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface active:translate-y-0"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-fc-violet px-5 py-3 text-sm font-semibold text-white shadow-sm transition-[background-color,transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:bg-fc-violet-light hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface active:translate-y-0 motion-reduce:transform-none motion-reduce:transition-colors"
           >
             <RotateCcw className="h-4 w-4" aria-hidden="true" />
             Erneut versuchen
           </button>
           <Link
             href="/"
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-fc-border/80 bg-fc-bg/30 px-5 py-3 text-sm font-semibold text-fc-fg transition-[border-color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:border-fc-violet/35 hover:bg-fc-bg/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface active:translate-y-0"
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-fc-border/80 bg-fc-bg/30 px-5 py-3 text-sm font-semibold text-fc-fg transition-[border-color,background-color,transform] duration-200 hover:-translate-y-0.5 hover:border-fc-violet/35 hover:bg-fc-bg/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface active:translate-y-0 motion-reduce:transform-none motion-reduce:transition-colors"
           >
             <Home className="h-4 w-4" aria-hidden="true" />
             Zur Startseite
