@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { prisma } from '@kumpelapp/db'
 import { Card, CardContent } from '@kumpelapp/ui'
-import { ArrowRight, Brain, Clock, History, SearchX, Trophy, User } from 'lucide-react'
+import { ArrowRight, Brain, Clock, History, SearchX, Trophy, User, type LucideIcon } from 'lucide-react'
 import { cn } from '@kumpelapp/utils'
 
 export const dynamic = 'force-dynamic'
@@ -39,7 +39,7 @@ function SectionHeading({
   accent,
 }: {
   id: string
-  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
+  icon: LucideIcon
   title: string
   accent: string
 }) {
