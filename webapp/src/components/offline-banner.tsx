@@ -41,15 +41,15 @@ export function OfflineBanner() {
     <div
       className={cn(
         'pointer-events-none fixed inset-x-0 top-0 z-[60] px-3 pt-[max(0.75rem,env(safe-area-inset-top))] sm:px-4',
-        'animate-fc-slide-down'
+        'animate-fc-slide-down motion-reduce:animate-none'
       )}
       aria-live="polite"
     >
       <div
-        className="pointer-events-auto mx-auto flex max-w-3xl items-center justify-center gap-2.5 rounded-xl border border-white/15 bg-fc-loss/95 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-black/20 backdrop-blur-sm"
+        className="pointer-events-auto mx-auto flex max-w-3xl items-center justify-center gap-3 rounded-xl border border-white/20 bg-fc-loss/95 px-4 py-3 text-sm font-medium text-white shadow-lg shadow-black/20 ring-1 ring-inset ring-white/5 backdrop-blur-sm"
         role="status"
       >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-white/12">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/12 ring-1 ring-inset ring-white/10">
           <WifiOff className="h-4 w-4" aria-hidden="true" />
         </span>
         <span className="text-center leading-snug">
