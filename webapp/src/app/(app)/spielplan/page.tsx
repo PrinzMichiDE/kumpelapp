@@ -1,11 +1,13 @@
-import { MatchDto, MatchListDto } from '@kumpelapp/api-contracts'
-import { MatchQuery } from '@kumpelapp/api-contracts'
+import type { MatchDto } from '@kumpelapp/api-contracts'
+import { prisma } from '@kumpelapp/db'
 import { formatDate, formatKickoff, formatMatchDay } from '@kumpelapp/utils'
 import { Card, CardContent } from '@kumpelapp/ui'
 import { Badge } from '@kumpelapp/ui'
-import { Calendar, Clock, MapPin, Trophy, AlertCircle, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, MapPin, Trophy, AlertCircle, CheckCircle, SearchX } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@kumpelapp/utils'
+
+export const dynamic = 'force-dynamic'
 
 interface MatchCardProps {
   match: MatchDto
@@ -19,9 +21,17 @@ function MatchCard({ match }: MatchCardProps) {
   const getStatusBadge = () => {
     switch (match.status) {
       case 'LIVE':
-        return <Badge variant="destructive" className="animate-pulse"><AlertCircle className="h-3 w-3 mr-1" /> LIVE</Badge>
+        return (
+          <Badge variant="destructive" className="animate-pulse">
+            <AlertCircle className="mr-1 h-3 w-3" /> LIVE
+          </Badge>
+        )
       case 'FINISHED':
-        return <Badge variant="success"><CheckCircle className="h-3 w-3 mr-1" /> Beendet</Badge>
+        return (
+          <Badge variant="success">
+            <CheckCircle className="mr-1 h-3 w-3" /> Beendet
+          </Badge>
+        )
       case 'POSTPONED':
         return <Badge variant="warning">Verlegt</Badge>
       case 'CANCELLED':
@@ -32,7 +42,7 @@ function MatchCard({ match }: MatchCardProps) {
   }
 
   const getResultDisplay = () => {
-    if (!isFinished || match.homeGoals === null || match.awayGoals === null) return null
+    if (match.homeGoals === null || match.awayGoals === null) return null
 
     const aueGoals = isAueHome ? match.homeGoals : match.awayGoals
     const opponentGoals = isAueHome ? match.awayGoals : match.homeGoals
@@ -42,20 +52,22 @@ function MatchCard({ match }: MatchCardProps) {
 
     return (
       <div className="flex items-center gap-3">
-        <span className={cn(
-          'text-2xl font-bold tabular-nums',
-          isWin && 'text-fc-win',
-          isDraw && 'text-fc-draw',
-          isLoss && 'text-fc-loss'
-        )}>
-          {aueGoals}:{opponentGoals}
+        <span
+          className={cn(
+            'text-2xl font-bold tabular-nums',
+            isFinished && isWin && 'text-fc-win',
+            isFinished && isDraw && 'text-fc-draw',
+            isFinished && isLoss && 'text-fc-loss',
+            !isFinished && 'text-fc-fg'
+          )}
+        >
+          {match.homeGoals}:{match.awayGoals}
         </span>
-        {isWin && <span className="text-fc-win">✓</span>}
-        {isDraw && <span className="text-fc-draw">⏸</span>}
-        {isLoss && <span className="text-fc-loss">✗</span>}
       </div>
     )
   }
+
+  const lastEventMinute = match.events?.length ? match.events[match.events.length - 1]?.minute : undefined
 
   return (
     <Link
@@ -66,73 +78,57 @@ function MatchCard({ match }: MatchCardProps) {
       <Card className="transition-[transform,border-color,box-shadow] duration-200 group-hover:-translate-y-0.5 group-hover:border-fc-violet/45 group-hover:shadow-lg group-hover:shadow-fc-violet/5 group-focus-visible:-translate-y-0.5 group-focus-visible:border-fc-violet/45 group-focus-visible:shadow-lg">
         <CardContent className="p-4 sm:p-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-4 flex-1 min-w-0">
-              <div className="flex flex-col items-center sm:items-start gap-1 flex-shrink-0 w-20">
-                <span className="text-xs font-medium text-fc-fg/60">{formatMatchDay(match.kickoff)}</span>
+            <div className="flex min-w-0 flex-1 items-center gap-4">
+              <div className="flex w-24 flex-shrink-0 flex-col items-center gap-1 sm:items-start">
+                <span className="text-center text-xs font-medium text-fc-fg/60 sm:text-left">{formatMatchDay(match.kickoff)}</span>
                 <span className="text-lg font-bold text-fc-fg">{formatDate(match.kickoff)}</span>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {match.matchday && (
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  {match.matchday ? (
                     <Badge variant="outline" className="text-xs">
-                      <Trophy className="h-3 w-3 mr-1" /> {match.matchday}. Spieltag
+                      <Trophy className="mr-1 h-3 w-3" /> {match.matchday}. Spieltag
                     </Badge>
-                  )}
+                  ) : null}
                   {getStatusBadge()}
                 </div>
-                <div className="mt-2 flex items-center gap-4 text-sm text-fc-fg/70 flex-wrap">
+                <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-fc-fg/70">
                   <span className="flex items-center gap-1">
                     <Clock className="h-4 w-4" /> {formatKickoff(match.kickoff)}
                   </span>
-                  {match.venue && (
+                  {match.venue ? (
                     <span className="flex items-center gap-1">
                       <MapPin className="h-4 w-4" /> {match.venue.name}
                     </span>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center gap-4 flex-shrink-0">
-              <div className="text-right sm:text-left">
-                <p className={cn(
-                  'font-medium truncate',
-                  isAueHome ? 'text-fc-fg' : 'text-fc-fg/70'
-                )}>
-                  {match.homeTeam.name}
-                </p>
-                <p className={cn(
-                  'font-medium truncate',
-                  !isAueHome ? 'text-fc-fg' : 'text-fc-fg/70'
-                )}>
-                  {match.awayTeam.name}
-                </p>
+            <div className="flex flex-shrink-0 items-center gap-4 sm:min-w-[22rem] sm:justify-end">
+              <div className="min-w-0 flex-1 text-right">
+                <p className={cn('truncate font-medium', isAueHome ? 'text-fc-fg' : 'text-fc-fg/70')}>{match.homeTeam.name}</p>
+                <p className={cn('truncate font-medium', !isAueHome ? 'text-fc-fg' : 'text-fc-fg/70')}>{match.awayTeam.name}</p>
               </div>
 
-              <div className="flex flex-col items-center gap-1 w-24">
-                {getResultDisplay()}
-                {isLive && (
-                  <Badge variant="destructive" className="text-xs animate-pulse">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-full w-full bg-red-500"></span>
+              <div className="flex w-24 flex-col items-center gap-1">
+                {getResultDisplay() ?? <span className="text-sm text-fc-fg/50">vs</span>}
+                {isLive ? (
+                  <Badge variant="destructive" className="text-xs">
+                    <span className="relative mr-1.5 flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex h-full w-full rounded-full bg-red-500"></span>
                     </span>
-                    {match.events?.[match.events.length - 1]?.minute || 0}'
+                    {lastEventMinute ?? 0}&apos;
                   </Badge>
-                )}
+                ) : null}
               </div>
 
-              <div className="text-right sm:text-left">
-                <p className={cn(
-                  'font-medium truncate',
-                  isAueHome ? 'text-fc-fg/70' : 'text-fc-fg'
-                )}>
+              <div className="min-w-0 flex-1 text-left">
+                <p className={cn('truncate font-medium', isAueHome ? 'text-fc-fg/70' : 'text-fc-fg')}>
                   {match.homeTeam.shortName || match.homeTeam.name}
                 </p>
-                <p className={cn(
-                  'font-medium truncate',
-                  !isAueHome ? 'text-fc-fg/70' : 'text-fc-fg'
-                )}>
+                <p className={cn('truncate font-medium', !isAueHome ? 'text-fc-fg/70' : 'text-fc-fg')}>
                   {match.awayTeam.shortName || match.awayTeam.name}
                 </p>
               </div>
@@ -144,54 +140,199 @@ function MatchCard({ match }: MatchCardProps) {
   )
 }
 
-export default function SpielplanPage() {
+function toDto(m: {
+  id: string
+  leagueId: string
+  externalId: string | null
+  source: string | null
+  matchday: number | null
+  kickoff: Date
+  status: MatchDto['status']
+  venue: {
+    id: string
+    name: string
+    city: string
+    lat: number | null
+    lng: number | null
+    awayBlockInfo: string | null
+    travelCar: string | null
+    travelTrain: string | null
+    parkingInfo: string | null
+  } | null
+  homeTeam: { id: string; name: string; shortName: string | null; logoUrl: string | null; isOwn: boolean }
+  awayTeam: { id: string; name: string; shortName: string | null; logoUrl: string | null; isOwn: boolean }
+  homeGoals: number | null
+  awayGoals: number | null
+  halftimeHome: number | null
+  halftimeAway: number | null
+  attendance: number | null
+  editorNote: string | null
+  events: { id: string; matchId: string; minute: number; type: string; side: string | null; player: string | null; text: string | null }[]
+  sales: { saleStart: Date | null; saleEnd: Date | null; shopUrl: string | null; awayContingent: string | null }[]
+  streams: { name: string; url: string; kind: string }[]
+}): MatchDto {
+  const sale = m.sales[0]
+  return {
+    id: m.id,
+    leagueId: m.leagueId,
+    externalId: m.externalId,
+    source: m.source,
+    matchday: m.matchday,
+    kickoff: m.kickoff.toISOString(),
+    status: m.status,
+    venue: m.venue
+      ? {
+          id: m.venue.id,
+          name: m.venue.name,
+          city: m.venue.city,
+          lat: m.venue.lat,
+          lng: m.venue.lng,
+          awayBlockInfo: m.venue.awayBlockInfo,
+          travelCar: m.venue.travelCar,
+          travelTrain: m.venue.travelTrain,
+          parkingInfo: m.venue.parkingInfo,
+        }
+      : null,
+    homeTeam: m.homeTeam,
+    awayTeam: m.awayTeam,
+    homeGoals: m.homeGoals,
+    awayGoals: m.awayGoals,
+    halftimeHome: m.halftimeHome,
+    halftimeAway: m.halftimeAway,
+    attendance: m.attendance,
+    editorNote: m.editorNote,
+    events: m.events as MatchDto['events'],
+    ticketSale: sale
+      ? {
+          saleStart: sale.saleStart ? sale.saleStart.toISOString() : null,
+          saleEnd: sale.saleEnd ? sale.saleEnd.toISOString() : null,
+          shopUrl: sale.shopUrl,
+          awayContingent: sale.awayContingent,
+        }
+      : null,
+    streams: m.streams,
+    weather: null,
+  }
+}
+
+export default async function SpielplanPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ timeframe?: string }>
+}) {
+  const { timeframe = 'all' } = await searchParams
+  const now = new Date()
+
+  let matches: MatchDto[] = []
+  let error: string | null = null
+
+  try {
+    const where =
+      timeframe === 'upcoming'
+        ? { kickoff: { gte: now } }
+        : timeframe === 'past'
+          ? { kickoff: { lt: now } }
+          : {}
+
+    const rows = await prisma.match.findMany({
+      where,
+      include: {
+        venue: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            lat: true,
+            lng: true,
+            awayBlockInfo: true,
+            travelCar: true,
+            travelTrain: true,
+            parkingInfo: true,
+          },
+        },
+        homeTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
+        awayTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
+        events: { orderBy: { minute: 'asc' } },
+        sales: { take: 1, orderBy: { saleStart: 'asc' } },
+        streams: { select: { name: true, url: true, kind: true } },
+      },
+      orderBy: { kickoff: timeframe === 'past' ? 'desc' : 'asc' },
+      take: 100,
+    })
+
+    matches = rows.map(toDto)
+  } catch (e) {
+    error = 'Spielplan konnte nicht geladen werden. Bitte versuche es später erneut.'
+    console.error('Spielplan load error', e)
+  }
+
+  const filters = [
+    { value: 'all', label: 'Alle Spiele' },
+    { value: 'upcoming', label: 'Kommende' },
+    { value: 'past', label: 'Vergangene' },
+  ] as const
+
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-fc-fg">Spielplan</h1>
-          <p className="mt-2 text-fc-fg/70">Alle Spiele der Saison 2026/27 – Regionalliga Nordost</p>
+          <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">Spielplan</h1>
+          <p className="mt-2 text-fc-fg/70">Alle Spiele der aktuellen Saison – Regionalliga Nordost</p>
         </div>
 
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-xs">
-            <label htmlFor="competition-filter" className="text-sm font-medium text-fc-fg/80">
-              Wettbewerb
-            </label>
-            <select
-              id="competition-filter"
-              name="competition"
-              className="h-11 rounded-lg border border-fc-border bg-fc-surface px-4 text-sm text-fc-fg shadow-sm transition-[border-color,box-shadow] duration-200 focus-visible:border-fc-violet/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
-              defaultValue="all"
-            >
-              <option value="all">Alle Wettbewerbe</option>
-              <option value="league">Liga</option>
-              <option value="cup">Pokal</option>
-            </select>
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <span className="text-sm font-medium text-fc-fg/80">Zeitraum</span>
+            <div className="flex flex-wrap gap-2" role="group" aria-label="Spielplan filtern">
+              {filters.map((f) => {
+                const active = timeframe === f.value
+                const href = f.value === 'all' ? '/spielplan' : `/spielplan?timeframe=${f.value}`
+                return (
+                  <Link
+                    key={f.value}
+                    href={href}
+                    className={cn(
+                      'inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg',
+                      active
+                        ? 'bg-fc-violet text-white shadow-sm shadow-fc-violet/20'
+                        : 'border border-fc-border bg-fc-surface text-fc-fg hover:border-fc-violet/35 hover:bg-fc-violet/10'
+                    )}
+                    aria-current={active ? 'page' : undefined}
+                  >
+                    {f.label}
+                  </Link>
+                )
+              })}
+            </div>
           </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5 sm:max-w-xs">
-            <label htmlFor="matchday-filter" className="text-sm font-medium text-fc-fg/80">
-              Zeitraum
-            </label>
-            <select
-              id="matchday-filter"
-              name="timeframe"
-              className="h-11 rounded-lg border border-fc-border bg-fc-surface px-4 text-sm text-fc-fg shadow-sm transition-[border-color,box-shadow] duration-200 focus-visible:border-fc-violet/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
-              defaultValue="all"
-            >
-              <option value="all">Alle Spieltage</option>
-              <option value="upcoming">Kommende</option>
-              <option value="past">Vergangene</option>
-            </select>
+          <div className="flex items-center gap-2 text-sm text-fc-fg/60">
+            <Calendar className="h-4 w-4" aria-hidden="true" />
+            <span>
+              {matches.length} {matches.length === 1 ? 'Spiel' : 'Spiele'}
+            </span>
           </div>
         </div>
 
-        <div className="space-y-4" id="matches-list" aria-live="polite">
-          <div className="flex items-center justify-center gap-3 rounded-xl border border-fc-border/70 bg-fc-surface/40 py-12 text-fc-fg/70" role="status">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-fc-violet/25 border-t-fc-violet" aria-hidden="true" />
-            <span className="text-sm font-medium">Lade Spiele…</span>
+        {error ? (
+          <div className="flex items-center gap-3 rounded-xl border border-fc-loss/30 bg-fc-loss/10 p-5 text-fc-loss" role="alert">
+            <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <p className="text-sm font-medium">{error}</p>
           </div>
-        </div>
+        ) : matches.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-fc-border/70 bg-fc-surface/40 py-16 text-center text-fc-fg/70">
+            <SearchX className="h-10 w-10 text-fc-fg/40" aria-hidden="true" />
+            <p className="text-base font-medium text-fc-fg">Keine Spiele gefunden</p>
+            <p className="max-w-md text-sm text-fc-fg/60">
+              Für den gewählten Zeitraum sind aktuell keine Spiele hinterlegt. Synchronisiere die Spieldaten im Admin-Bereich oder wähle einen anderen Filter.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4" id="matches-list">
+            {matches.map((match) => (
+              <MatchCard key={match.id} match={match} />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

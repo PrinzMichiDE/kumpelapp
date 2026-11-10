@@ -1,0 +1,419 @@
+import type { MatchDto } from '@kumpelapp/api-contracts'
+import { prisma } from '@kumpelapp/db'
+import { formatDate, formatKickoff, formatMatchDay } from '@kumpelapp/utils'
+import { Badge, Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
+import { AlertCircle, ArrowLeft, Calendar, Car, CheckCircle, Clock, ExternalLink, MapPin, Ticket, Train, Trophy, Tv } from 'lucide-react'
+import Link from 'next/link'
+import { notFound } from 'next/navigation'
+import { cn } from '@kumpelapp/utils'
+
+export const dynamic = 'force-dynamic'
+
+function toDto(m: {
+  id: string
+  leagueId: string
+  externalId: string | null
+  source: string | null
+  matchday: number | null
+  kickoff: Date
+  status: MatchDto['status']
+  venue: {
+    id: string
+    name: string
+    city: string
+    lat: number | null
+    lng: number | null
+    awayBlockInfo: string | null
+    travelCar: string | null
+    travelTrain: string | null
+    parkingInfo: string | null
+  } | null
+  homeTeam: { id: string; name: string; shortName: string | null; logoUrl: string | null; isOwn: boolean }
+  awayTeam: { id: string; name: string; shortName: string | null; logoUrl: string | null; isOwn: boolean }
+  homeGoals: number | null
+  awayGoals: number | null
+  halftimeHome: number | null
+  halftimeAway: number | null
+  attendance: number | null
+  editorNote: string | null
+  events: { id: string; matchId: string; minute: number; type: string; side: string | null; player: string | null; text: string | null }[]
+  sales: { saleStart: Date | null; saleEnd: Date | null; shopUrl: string | null; awayContingent: string | null }[]
+  streams: { name: string; url: string; kind: string }[]
+}): MatchDto {
+  const sale = m.sales[0]
+  return {
+    id: m.id,
+    leagueId: m.leagueId,
+    externalId: m.externalId,
+    source: m.source,
+    matchday: m.matchday,
+    kickoff: m.kickoff.toISOString(),
+    status: m.status,
+    venue: m.venue
+      ? {
+          id: m.venue.id,
+          name: m.venue.name,
+          city: m.venue.city,
+          lat: m.venue.lat,
+          lng: m.venue.lng,
+          awayBlockInfo: m.venue.awayBlockInfo,
+          travelCar: m.venue.travelCar,
+          travelTrain: m.venue.travelTrain,
+          parkingInfo: m.venue.parkingInfo,
+        }
+      : null,
+    homeTeam: m.homeTeam,
+    awayTeam: m.awayTeam,
+    homeGoals: m.homeGoals,
+    awayGoals: m.awayGoals,
+    halftimeHome: m.halftimeHome,
+    halftimeAway: m.halftimeAway,
+    attendance: m.attendance,
+    editorNote: m.editorNote,
+    events: m.events as MatchDto['events'],
+    ticketSale: sale
+      ? {
+          saleStart: sale.saleStart ? sale.saleStart.toISOString() : null,
+          saleEnd: sale.saleEnd ? sale.saleEnd.toISOString() : null,
+          shopUrl: sale.shopUrl,
+          awayContingent: sale.awayContingent,
+        }
+      : null,
+    streams: m.streams,
+    weather: null,
+  }
+}
+
+function statusBadge(status: MatchDto['status']) {
+  switch (status) {
+    case 'LIVE':
+      return (
+        <Badge variant="destructive" className="animate-pulse">
+          <AlertCircle className="mr-1 h-3 w-3" /> LIVE
+        </Badge>
+      )
+    case 'FINISHED':
+      return (
+        <Badge variant="success">
+          <CheckCircle className="mr-1 h-3 w-3" /> Beendet
+        </Badge>
+      )
+    case 'POSTPONED':
+      return <Badge variant="warning">Verlegt</Badge>
+    case 'CANCELLED':
+      return <Badge variant="destructive">Abgesagt</Badge>
+    default:
+      return <Badge variant="outline">Geplant</Badge>
+  }
+}
+
+function eventLabel(type: string) {
+  switch (type) {
+    case 'GOAL':
+      return 'Tor'
+    case 'OWN_GOAL':
+      return 'Eigentor'
+    case 'PENALTY_GOAL':
+      return 'Elfmeter'
+    case 'YELLOW_CARD':
+      return 'Gelbe Karte'
+    case 'YELLOW_RED':
+      return 'Gelb-Rot'
+    case 'RED_CARD':
+      return 'Rote Karte'
+    case 'SUBSTITUTION':
+      return 'Wechsel'
+    default:
+      return 'Ereignis'
+  }
+}
+
+export default async function SpielDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+
+  let match: MatchDto | null = null
+  try {
+    const row = await prisma.match.findUnique({
+      where: { id },
+      include: {
+        venue: {
+          select: {
+            id: true,
+            name: true,
+            city: true,
+            lat: true,
+            lng: true,
+            awayBlockInfo: true,
+            travelCar: true,
+            travelTrain: true,
+            parkingInfo: true,
+          },
+        },
+        homeTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
+        awayTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
+        events: { orderBy: { minute: 'asc' } },
+        sales: { take: 1, orderBy: { saleStart: 'asc' } },
+        streams: { select: { name: true, url: true, kind: true } },
+      },
+    })
+    if (row) match = toDto(row)
+  } catch (e) {
+    console.error('Match detail load error', e)
+  }
+
+  if (!match) notFound()
+
+  const isFinished = match.status === 'FINISHED'
+  const hasScore = match.homeGoals !== null && match.awayGoals !== null
+
+  return (
+    <div className="min-h-screen bg-fc-bg">
+      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <Link
+          href="/spielplan"
+          className="mb-6 inline-flex items-center gap-2 rounded-lg text-sm font-medium text-fc-fg/70 transition-colors hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          Zurück zum Spielplan
+        </Link>
+
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b border-fc-border/70 bg-fc-surface/50">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                {match.matchday ? (
+                  <Badge variant="outline">
+                    <Trophy className="mr-1 h-3 w-3" /> {match.matchday}. Spieltag
+                  </Badge>
+                ) : null}
+                {statusBadge(match.status)}
+              </div>
+              <div className="flex flex-wrap items-center gap-4 text-sm text-fc-fg/70">
+                <span className="inline-flex items-center gap-1.5">
+                  <Calendar className="h-4 w-4" aria-hidden="true" />
+                  <time dateTime={match.kickoff}>{formatMatchDay(match.kickoff)}</time>
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" aria-hidden="true" />
+                  {formatKickoff(match.kickoff)} Uhr
+                </span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 sm:p-8">
+            <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 sm:gap-8">
+              <div className="text-center">
+                <p className={cn('text-lg font-semibold sm:text-2xl', match.homeTeam.isOwn ? 'text-fc-violet-light' : 'text-fc-fg')}>
+                  {match.homeTeam.name}
+                </p>
+                <p className="mt-1 text-sm text-fc-fg/50">Heim</p>
+              </div>
+              <div className="flex flex-col items-center">
+                {hasScore ? (
+                  <>
+                    <p className="text-4xl font-bold tabular-nums text-fc-fg sm:text-6xl">
+                      {match.homeGoals}:{match.awayGoals}
+                    </p>
+                    {match.halftimeHome !== null && match.halftimeAway !== null ? (
+                      <p className="mt-1 text-sm text-fc-fg/60">
+                        HZ {match.halftimeHome}:{match.halftimeAway}
+                      </p>
+                    ) : null}
+                  </>
+                ) : (
+                  <p className="text-3xl font-bold text-fc-fg/40 sm:text-5xl">vs</p>
+                )}
+              </div>
+              <div className="text-center">
+                <p className={cn('text-lg font-semibold sm:text-2xl', match.awayTeam.isOwn ? 'text-fc-violet-light' : 'text-fc-fg')}>
+                  {match.awayTeam.name}
+                </p>
+                <p className="mt-1 text-sm text-fc-fg/50">Auswärts</p>
+              </div>
+            </div>
+
+            {match.editorNote ? (
+              <div className="mt-6 rounded-lg border border-fc-violet/20 bg-fc-violet/5 p-4 text-sm text-fc-fg/80">
+                <p className="font-medium text-fc-violet-light">Hinweis</p>
+                <p className="mt-1">{match.editorNote}</p>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <div className="mt-6 grid gap-6 lg:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Spielinfos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex items-start gap-3">
+                <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-fc-fg/50" aria-hidden="true" />
+                <div>
+                  <p className="font-medium text-fc-fg">Anstoß</p>
+                  <p className="text-fc-fg/70">
+                    {formatDate(match.kickoff)} · {formatKickoff(match.kickoff)} Uhr
+                  </p>
+                </div>
+              </div>
+              {match.venue ? (
+                <div className="flex items-start gap-3">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-fc-fg/50" aria-hidden="true" />
+                  <div>
+                    <p className="font-medium text-fc-fg">Spielort</p>
+                    <p className="text-fc-fg/70">
+                      {match.venue.name}, {match.venue.city}
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+              {match.attendance ? (
+                <div className="flex items-start gap-3">
+                  <Trophy className="mt-0.5 h-4 w-4 shrink-0 text-fc-fg/50" aria-hidden="true" />
+                  <div>
+                    <p className="font-medium text-fc-fg">Zuschauer</p>
+                    <p className="text-fc-fg/70">{match.attendance.toLocaleString('de-DE')}</p>
+                  </div>
+                </div>
+              ) : null}
+              {match.ticketSale?.shopUrl ? (
+                <div className="flex items-start gap-3">
+                  <Ticket className="mt-0.5 h-4 w-4 shrink-0 text-fc-fg/50" aria-hidden="true" />
+                  <div>
+                    <p className="font-medium text-fc-fg">Tickets</p>
+                    <a
+                      href={match.ticketSale.shopUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-fc-violet hover:text-fc-violet-light"
+                    >
+                      Zum Ticketshop <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                    </a>
+                    {match.ticketSale.awayContingent ? (
+                      <p className="mt-1 text-fc-fg/60">{match.ticketSale.awayContingent}</p>
+                    ) : null}
+                  </div>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Anfahrt & Stadion</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              {match.venue ? (
+                <>
+                  {match.venue.awayBlockInfo ? (
+                    <div className="rounded-lg border border-fc-violet/20 bg-fc-violet/5 p-3">
+                      <p className="font-medium text-fc-violet-light">Gästeblock</p>
+                      <p className="mt-1 text-fc-fg/70">{match.venue.awayBlockInfo}</p>
+                    </div>
+                  ) : null}
+                  {match.venue.travelCar ? (
+                    <div className="flex items-start gap-3">
+                      <Car className="mt-0.5 h-4 w-4 shrink-0 text-fc-fg/50" aria-hidden="true" />
+                      <div>
+                        <p className="font-medium text-fc-fg">Anfahrt Auto</p>
+                        <p className="text-fc-fg/70">{match.venue.travelCar}</p>
+                      </div>
+                    </div>
+                  ) : null}
+                  {match.venue.travelTrain ? (
+                    <div className="flex items-start gap-3">
+                      <Train className="mt-0.5 h-4 w-4 shrink-0 text-fc-fg/50" aria-hidden="true" />
+                      <div>
+                        <p className="font-medium text-fc-fg">Anfahrt ÖPNV</p>
+                        <p className="text-fc-fg/70">{match.venue.travelTrain}</p>
+                      </div>
+                    </div>
+                  ) : null}
+                  {match.venue.parkingInfo ? (
+                    <div className="flex items-start gap-3">
+                      <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-fc-fg/50" aria-hidden="true" />
+                      <div>
+                        <p className="font-medium text-fc-fg">Parken</p>
+                        <p className="text-fc-fg/70">{match.venue.parkingInfo}</p>
+                      </div>
+                    </div>
+                  ) : null}
+                  {!match.venue.awayBlockInfo && !match.venue.travelCar && !match.venue.travelTrain && !match.venue.parkingInfo ? (
+                    <p className="text-fc-fg/60">Noch keine detaillierten Anfahrtsinfos hinterlegt.</p>
+                  ) : null}
+                </>
+              ) : (
+                <p className="text-fc-fg/60">Kein Spielort hinterlegt.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {match.events && match.events.length > 0 ? (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Spielereignisse</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ol className="space-y-3" aria-label="Spielverlauf">
+                {match.events.map((ev) => (
+                  <li key={ev.id} className="flex items-start gap-3 rounded-lg border border-fc-border/70 bg-fc-surface/40 p-3">
+                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-fc-violet/15 px-2 text-xs font-semibold text-fc-violet-light tabular-nums">
+                      {ev.minute}&apos;
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-medium text-fc-fg">
+                        {eventLabel(ev.type)}
+                        {ev.player ? <span className="font-normal text-fc-fg/80"> – {ev.player}</span> : null}
+                      </p>
+                      {ev.text ? <p className="text-sm text-fc-fg/60">{ev.text}</p> : null}
+                      {ev.side ? <p className="text-xs text-fc-fg/50">{ev.side === 'HOME' ? 'Heim' : ev.side === 'AWAY' ? 'Auswärts' : ev.side}</p> : null}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </CardContent>
+          </Card>
+        ) : isFinished || match.status === 'LIVE' ? (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Spielereignisse</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-fc-fg/60">Noch keine Ereignisse erfasst.</p>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {match.streams && match.streams.length > 0 ? (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Tv className="h-5 w-5" aria-hidden="true" /> Übertragung
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2">
+                {match.streams.map((s, i) => (
+                  <li key={`${s.url}-${i}`}>
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between rounded-lg border border-fc-border/70 bg-fc-surface/40 px-4 py-3 text-sm transition-colors hover:border-fc-violet/40 hover:bg-fc-violet/5"
+                    >
+                      <span className="font-medium text-fc-fg">{s.name}</span>
+                      <span className="inline-flex items-center gap-1 text-fc-violet">
+                        {s.kind} <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                      </span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        ) : null}
+      </div>
+    </div>
+  )
+}
