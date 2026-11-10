@@ -22,13 +22,16 @@ const ToastViewport = React.forwardRef<
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName
 
 const toastVariants = cva(
-  'group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-md border p-6 pr-8 shadow-lg transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full',
+  'group pointer-events-auto relative flex w-full items-start justify-between gap-4 overflow-hidden rounded-xl border p-4 pr-10 shadow-lg ring-1 ring-inset ring-black/5 backdrop-blur-sm transition-[transform,opacity,box-shadow,border-color,background-color] data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full',
   {
     variants: {
       variant: {
-        default: 'border-violet-200 bg-white text-violet-950 dark:border-violet-800 dark:bg-violet-950 dark:text-violet-50',
-        destructive: 'destructive group border-red-200 bg-red-50 text-red-900 dark:border-red-900 dark:bg-red-950 dark:text-red-50',
-        success: 'border-green-200 bg-green-50 text-green-900 dark:border-green-900 dark:bg-green-950 dark:text-green-50',
+        default:
+          'border-border/80 bg-card/95 text-card-foreground',
+        destructive:
+          'destructive group border-destructive/30 bg-destructive/10 text-foreground',
+        success:
+          'border-fc-win/30 bg-fc-win/10 text-foreground',
       },
     },
     defaultVariants: {
@@ -58,7 +61,8 @@ const ToastAction = React.forwardRef<
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
-      'inline-flex h-8 shrink-0 items-center justify-center rounded-md border bg-transparent px-3 text-sm font-medium ring-offset-white transition-colors hover:bg-violet-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 group-[.destructive]:border-red-400 group-[.destructive]:hover:bg-red-50 group-[.destructive]:focus:ring-red-400 dark:border-violet-700 dark:hover:bg-violet-800 group-[.destructive]:dark:border-red-900 group-[.destructive]:dark:hover:bg-red-950',
+      'inline-flex h-8 shrink-0 items-center justify-center rounded-md border border-border/70 bg-background/40 px-3 text-sm font-medium ring-offset-background transition-[color,background-color,border-color,box-shadow] duration-200 hover:bg-accent/15 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+      'group-[.destructive]:border-destructive/30 group-[.destructive]:hover:bg-destructive/10 group-[.destructive]:focus-visible:ring-destructive',
       className
     )}
     {...props}
@@ -73,7 +77,8 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      'absolute right-2 top-2 rounded-md p-1 text-violet-500 opacity-0 transition-opacity hover:text-violet-900 focus:opacity-100 focus:outline-none focus:ring-2 group-hover:opacity-100 group-[.destructive]:text-red-500 group-[.destructive]:hover:text-red-900 dark:text-violet-400 dark:hover:text-violet-50 group-[.destructive]:dark:text-red-400 group-[.destructive]:dark:hover:text-red-50',
+      'absolute right-2 top-2 rounded-md p-1.5 text-foreground/55 opacity-70 transition-[opacity,color,background-color] duration-200 hover:bg-background/50 hover:text-foreground hover:opacity-100 focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100 sm:focus-visible:opacity-100',
+      'group-[.destructive]:text-destructive/80 group-[.destructive]:hover:bg-destructive/10 group-[.destructive]:hover:text-destructive group-[.destructive]:focus-visible:ring-destructive',
       className
     )}
     toast-close=""
