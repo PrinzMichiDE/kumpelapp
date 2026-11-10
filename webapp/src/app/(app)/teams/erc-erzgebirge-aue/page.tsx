@@ -50,7 +50,7 @@ export default async function ErsteMannschaftPage() {
         prisma.standing.findFirst({
           where: { teamId: teamRow.id },
           orderBy: { updatedAt: 'desc' },
-          include: { league: { select: { name: true, season: { select: { name: true } } } } },
+          include: { league: { select: { name: true, season: { select: { label: true } } } } },
         }),
         prisma.player.findMany({
           where: { teamId: teamRow.id },
@@ -76,8 +76,8 @@ export default async function ErsteMannschaftPage() {
           kickoff: last.kickoff,
           home: last.homeTeam.shortName || last.homeTeam.name,
           away: last.awayTeam.shortName || last.awayTeam.name,
-          homeScore: last.homeScore,
-          awayScore: last.awayScore,
+          homeScore: last.homeGoals,
+          awayScore: last.awayGoals,
           competition: last.league.name,
         }
       }
@@ -92,7 +92,7 @@ export default async function ErsteMannschaftPage() {
           goalsFor: standingRow.goalsFor,
           goalsAgainst: standingRow.goalsAgainst,
           league: standingRow.league.name,
-          season: standingRow.league.season.name,
+          season: standingRow.league.season.label,
         }
       }
       players = playerRows
