@@ -413,25 +413,29 @@ function StatCard({
   return (
     <Card
       className={cn(
-        'group relative overflow-hidden border-fc-border/70 bg-fc-surface/70 text-center backdrop-blur-[1px]',
+        'group relative overflow-hidden border-fc-border/70 bg-fc-surface/70 px-5 py-6 text-center backdrop-blur-[1px] sm:py-7',
         'transition-[transform,border-color,box-shadow,background-color] duration-200',
-        'hover:-translate-y-0.5 hover:border-fc-violet/45 hover:bg-fc-surface hover:shadow-lg hover:shadow-fc-violet/5'
+        'hover:-translate-y-0.5 hover:border-fc-violet/45 hover:bg-fc-surface hover:shadow-lg hover:shadow-fc-violet/5',
+        'motion-reduce:transform-none motion-reduce:transition-none'
       )}
     >
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-fc-violet/40 to-transparent opacity-70"
       />
-      <CardContent className="relative px-5 py-6 sm:py-7">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-fc-violet/12 ring-1 ring-fc-violet/15 transition-[background-color,box-shadow,transform] duration-200 group-hover:bg-fc-violet group-hover:shadow-sm group-hover:shadow-fc-violet/25 group-hover:scale-[1.02]">
+      <div className="relative">
+        <div
+          aria-hidden="true"
+          className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-fc-violet/12 ring-1 ring-fc-violet/15 transition-[background-color,box-shadow,transform] duration-200 group-hover:bg-fc-violet group-hover:shadow-sm group-hover:shadow-fc-violet/25 group-hover:scale-[1.02] motion-reduce:transform-none"
+        >
           <Icon
             className="h-6 w-6 text-fc-violet transition-colors duration-200 group-hover:text-white"
             aria-hidden="true"
           />
         </div>
-        <dd className="text-balance text-xl font-bold leading-tight text-fc-fg sm:text-2xl">{value}</dd>
-        <dt className="mt-1.5 text-xs font-medium uppercase tracking-wide text-fc-fg/55">{label}</dt>
-      </CardContent>
+        <dt className="text-xs font-medium uppercase tracking-wide text-fc-fg/55">{label}</dt>
+        <dd className="mt-1.5 m-0 text-balance text-xl font-bold leading-tight text-fc-fg sm:text-2xl">{value}</dd>
+      </div>
     </Card>
   )
 }
