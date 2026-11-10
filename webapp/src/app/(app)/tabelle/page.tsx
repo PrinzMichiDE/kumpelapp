@@ -1,19 +1,19 @@
-import { StandingDto } from '@kumpelapp/api-contracts'
+import type { StandingDto } from '@kumpelapp/api-contracts'
+import { prisma } from '@kumpelapp/db'
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
-import { Badge } from '@kumpelapp/ui'
-import { Trophy, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { AlertCircle, Minus, SearchX, TrendingDown, TrendingUp, Trophy } from 'lucide-react'
 import { cn } from '@kumpelapp/utils'
 
-const BASE_DATE = new Date('2026-08-01T00:00:00Z')
+export const dynamic = 'force-dynamic'
 
 interface StandingRowProps {
-  standing: StandingDto
+  standing: StandingDto & { team: StandingDto['team'] & { isOwn?: boolean } }
   index: number
   isAue: boolean
 }
 
 function StandingRow({ standing, index, isAue }: StandingRowProps) {
-  const formChars = standing.form?.split(',') || []
+  const formChars = standing.form?.split(',').filter(Boolean) ?? []
   const lastFive = formChars.slice(-5)
 
   const formLabel = (result: string) => {
@@ -42,6 +42,8 @@ function StandingRow({ standing, index, isAue }: StandingRowProps) {
     }
   }
 
+  const diff = standing.goalDifference ?? standing.goalsFor - standing.goalsAgainst
+
   return (
     <tr
       className={cn(
@@ -49,7 +51,7 @@ function StandingRow({ standing, index, isAue }: StandingRowProps) {
         isAue && 'bg-fc-violet/12 font-medium ring-1 ring-inset ring-fc-violet/20'
       )}
     >
-      <td className="px-4 py-3 text-center text-sm font-bold tabular-nums text-fc-fg">{index + 1}.</td>
+      <td className="px-4 py-3 text-center text-sm font-bold tabular-nums text-fc-fg">{standing.position || index + 1}.</td>
       <th scope="row" className="px-4 py-3 text-left font-normal">
         <div className="flex items-center gap-3">
           {standing.team.logoUrl ? (
@@ -74,296 +76,179 @@ function StandingRow({ standing, index, isAue }: StandingRowProps) {
         {standing.goalsFor}:{standing.goalsAgainst}
       </td>
       <td className="px-4 py-3 text-center text-sm tabular-nums text-fc-fg/90">
-        {standing.goalsFor - standing.goalsAgainst >= 0 ? '+' : ''}
-        {standing.goalsFor - standing.goalsAgainst}
+        {diff >= 0 ? '+' : ''}
+        {diff}
       </td>
       <td className="px-4 py-3 text-center text-base font-bold tabular-nums text-fc-fg">{standing.points}</td>
       <td className="px-4 py-3">
-        <div className="flex items-center justify-center gap-1" aria-label={`Form: ${lastFive.map(formLabel).join(', ')}`}>
-          {lastFive.map((result, i) => (
-            <span
-              key={`${standing.id}-form-${i}`}
-              className="flex h-6 w-6 items-center justify-center rounded-md bg-fc-bg/30"
-              title={formLabel(result)}
-            >
-              {getFormIcon(result)}
-            </span>
-          ))}
+        <div className="flex items-center justify-center gap-1" aria-label={lastFive.length ? `Form: ${lastFive.map(formLabel).join(', ')}` : 'Keine Formdaten'}>
+          {lastFive.length ? (
+            lastFive.map((result, i) => (
+              <span
+                key={`${standing.id}-form-${i}`}
+                className="flex h-6 w-6 items-center justify-center rounded-md bg-fc-bg/30"
+                title={formLabel(result)}
+              >
+                {getFormIcon(result)}
+              </span>
+            ))
+          ) : (
+            <span className="text-xs text-fc-fg/40">–</span>
+          )}
         </div>
       </td>
     </tr>
   )
 }
 
-export default function TabellePage() {
+export default async function TabellePage() {
+  let standings: (StandingDto & { team: StandingDto['team'] & { isOwn?: boolean } })[] = []
+  let leagueName = 'Regionalliga Nordost'
+  let seasonLabel: string | null = null
+  let updatedAt: string | null = null
+  let error: string | null = null
+
+  try {
+    const league = await prisma.league.findFirst({
+      where: { season: { isCurrent: true } },
+      include: { season: true },
+      orderBy: { tier: 'asc' },
+    })
+
+    const targetLeague =
+      league ??
+      (await prisma.league.findFirst({
+        include: { season: true },
+        orderBy: [{ season: { startYear: 'desc' } }, { tier: 'asc' }],
+      }))
+
+    if (targetLeague) {
+      leagueName = targetLeague.name
+      seasonLabel = targetLeague.season?.label ?? null
+      const rows = await prisma.standing.findMany({
+        where: { leagueId: targetLeague.id },
+        include: {
+          team: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
+        },
+        orderBy: { position: 'asc' },
+      })
+
+      standings = rows.map((r) => ({
+        id: r.id,
+        leagueId: r.leagueId,
+        team: {
+          id: r.team.id,
+          name: r.team.name,
+          shortName: r.team.shortName,
+          logoUrl: r.team.logoUrl,
+          isOwn: r.team.isOwn,
+        },
+        position: r.position,
+        played: r.played,
+        won: r.won,
+        drawn: r.drawn,
+        lost: r.lost,
+        goalsFor: r.goalsFor,
+        goalsAgainst: r.goalsAgainst,
+        goalDifference: r.goalsFor - r.goalsAgainst,
+        points: r.points,
+        form: r.form,
+        updatedAt: r.updatedAt.toISOString(),
+      }))
+
+      const latest = rows.reduce<Date | null>((acc, r) => (!acc || r.updatedAt > acc ? r.updatedAt : acc), null)
+      updatedAt = latest ? latest.toISOString() : null
+    }
+  } catch (e) {
+    error = 'Tabelle konnte nicht geladen werden. Bitte versuche es später erneut.'
+    console.error('Tabelle load error', e)
+  }
+
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-fc-fg">Tabelle</h1>
-          <p className="mt-2 text-fc-fg/70">Regionalliga Nordost 2026/27</p>
+          <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">Tabelle</h1>
+          <p className="mt-2 text-fc-fg/70">
+            {leagueName}
+            {seasonLabel ? ` ${seasonLabel}` : ''}
+          </p>
+          {updatedAt ? (
+            <p className="mt-1 text-xs text-fc-fg/50">Stand: {new Date(updatedAt).toLocaleString('de-DE')}</p>
+          ) : null}
         </div>
 
-        <Card className="overflow-hidden">
-          <CardHeader className="border-b border-fc-border/70">
-            <CardTitle className="text-xl">Regionalliga Nordost</CardTitle>
-            <p className="text-sm text-fc-fg/60">Aktueller Tabellenstand mit Form der letzten fünf Spiele.</p>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto overscroll-x-contain">
-              <table className="w-full min-w-[720px] border-collapse text-left" aria-label="Tabelle Regionalliga Nordost">
-                <caption className="sr-only">
-                  Tabelle der Regionalliga Nordost mit Platz, Verein, Spielen, Siegen, Unentschieden, Niederlagen, Toren,
-                  Differenz, Punkten und Form.
-                </caption>
-                <thead>
-                  <tr className="bg-fc-surface/90">
-                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                      <abbr title="Platz" className="no-underline">#</abbr>
-                    </th>
-                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                      Verein
-                    </th>
-                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                      <abbr title="Spiele" className="no-underline">Sp</abbr>
-                    </th>
-                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                      <abbr title="Siege" className="no-underline">S</abbr>
-                    </th>
-                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                      <abbr title="Unentschieden" className="no-underline">U</abbr>
-                    </th>
-                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                      <abbr title="Niederlagen" className="no-underline">N</abbr>
-                    </th>
-                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                      Tore
-                    </th>
-                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                      <abbr title="Tordifferenz" className="no-underline">Diff</abbr>
-                    </th>
-                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                      <abbr title="Punkte" className="no-underline">Pkt</abbr>
-                    </th>
-                    <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                      Form
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-card">
-                  <StandingRow
-                    standing={{
-                      id: '1',
-                      leagueId: '1',
-                      team: {
-                        id: '1',
-                        name: 'FC Rot-Weiß Erfurt',
-                        shortName: 'RWE',
-                        logoUrl: null,
-                      },
-                      position: 1,
-                      played: 16,
-                      won: 10,
-                      drawn: 4,
-                      lost: 2,
-                      goalsFor: 32,
-                      goalsAgainst: 15,
-                      points: 34,
-                      form: 'W,W,D,W,W',
-                      goalDifference: 17,
-                      updatedAt: BASE_DATE.toISOString(),
-                    }}
-                    index={0}
-                    isAue={false}
-                  />
-                  <StandingRow
-                    standing={{
-                      id: '2',
-                      leagueId: '1',
-                      team: {
-                        id: '2',
-                        name: 'Chemnitzer FC',
-                        shortName: 'CFC',
-                        logoUrl: null,
-                        
-                      },
-                      position: 2,
-                      played: 16,
-                      won: 9,
-                      drawn: 5,
-                      lost: 2,
-                      goalsFor: 28,
-                      goalsAgainst: 12,
-                      points: 32,
-                      form: 'W,D,W,W,D',
-                      goalDifference: 16,
-                      updatedAt: BASE_DATE.toISOString(),
-                    }}
-                    index={1}
-                    isAue={false}
-                  />
-                  <StandingRow
-                    standing={{
-                      id: '3',
-                      leagueId: '1',
-                      team: {
-                        id: '3',
-                        name: 'Hallescher FC',
-                        shortName: 'HFC',
-                        logoUrl: null,
-                        
-                      },
-                      position: 3,
-                      played: 16,
-                      won: 9,
-                      drawn: 3,
-                      lost: 4,
-                      goalsFor: 30,
-                      goalsAgainst: 18,
-                      points: 30,
-                      form: 'L,W,W,D,W',
-                      goalDifference: 12,
-                      updatedAt: BASE_DATE.toISOString(),
-                    }}
-                    index={2}
-                    isAue={false}
-                  />
-                  <StandingRow
-                    standing={{
-                      id: '4',
-                      leagueId: '1',
-                      team: {
-                        id: '4',
-                        name: 'BFC Dynamo',
-                        shortName: 'BFC',
-                        logoUrl: null,
-                        
-                      },
-                      position: 4,
-                      played: 16,
-                      won: 8,
-                      drawn: 5,
-                      lost: 3,
-                      goalsFor: 26,
-                      goalsAgainst: 14,
-                      points: 29,
-                      form: 'D,W,L,W,W',
-                      goalDifference: 12,
-                      updatedAt: BASE_DATE.toISOString(),
-                    }}
-                    index={3}
-                    isAue={false}
-                  />
-                  <StandingRow
-                    standing={{
-                      id: '5',
-                      leagueId: '1',
-                      team: {
-                        id: '5',
-                        name: 'VSG Altglienicke',
-                        shortName: 'VSG',
-                        logoUrl: null,
-                        
-                      },
-                      position: 5,
-                      played: 16,
-                      won: 8,
-                      drawn: 4,
-                      lost: 4,
-                      goalsFor: 25,
-                      goalsAgainst: 16,
-                      points: 28,
-                      form: 'W,W,D,L,W',
-                      goalDifference: 9,
-                      updatedAt: BASE_DATE.toISOString(),
-                    }}
-                    index={4}
-                    isAue={false}
-                  />
-                  <StandingRow
-                    standing={{
-                      id: '6',
-                      leagueId: '1',
-                      team: {
-                        id: '6',
-                        name: 'Greifswalder FC',
-                        shortName: 'GFC',
-                        logoUrl: null,
-                        
-                      },
-                      position: 6,
-                      played: 16,
-                      won: 8,
-                      drawn: 3,
-                      lost: 5,
-                      goalsFor: 24,
-                      goalsAgainst: 19,
-                      points: 27,
-                      form: 'L,W,D,W,L',
-                      goalDifference: 5,
-                      updatedAt: BASE_DATE.toISOString(),
-                    }}
-                    index={5}
-                    isAue={false}
-                  />
-                  <StandingRow
-                    standing={{
-                      id: '7',
-                      leagueId: '1',
-                      team: {
-                        id: '7',
-                        name: 'FC Erzgebirge Aue',
-                        shortName: 'AUE',
-                        logoUrl: null,
-                      },
-                      position: 7,
-                      played: 16,
-                      won: 7,
-                      drawn: 5,
-                      lost: 4,
-                      goalsFor: 23,
-                      goalsAgainst: 17,
-                      points: 26,
-                      form: 'W,D,W,W,D',
-                      goalDifference: 6,
-                      updatedAt: BASE_DATE.toISOString(),
-                    }}
-                    index={6}
-                    isAue={true}
-                  />
-                  <StandingRow
-                    standing={{
-                      id: '8',
-                      leagueId: '1',
-                      team: {
-                        id: '8',
-                        name: '1. FC Lok Leipzig',
-                        shortName: 'LOK',
-                        logoUrl: null,
-                        
-                      },
-                      position: 8,
-                      played: 16,
-                      won: 7,
-                      drawn: 4,
-                      lost: 5,
-                      goalsFor: 22,
-                      goalsAgainst: 18,
-                      points: 25,
-                      form: 'D,L,W,D,W',
-                      goalDifference: 4,
-                      updatedAt: BASE_DATE.toISOString(),
-                    }}
-                    index={7}
-                    isAue={false}
-                  />
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        {error ? (
+          <div className="flex items-center gap-3 rounded-xl border border-fc-loss/30 bg-fc-loss/10 p-5 text-fc-loss" role="alert">
+            <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
+            <p className="text-sm font-medium">{error}</p>
+          </div>
+        ) : standings.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-fc-border/70 bg-fc-surface/40 py-16 text-center text-fc-fg/70">
+            <SearchX className="h-10 w-10 text-fc-fg/40" aria-hidden="true" />
+            <p className="text-base font-medium text-fc-fg">Keine Tabellendaten vorhanden</p>
+            <p className="max-w-md text-sm text-fc-fg/60">
+              Aktuell sind keine Standings in der Datenbank hinterlegt. Synchronisiere die Tabelle über den Admin-Bereich (OpenLigaDB), um den aktuellen Tabellenstand anzuzeigen.
+            </p>
+          </div>
+        ) : (
+          <Card className="overflow-hidden">
+            <CardHeader className="border-b border-fc-border/70">
+              <CardTitle className="text-xl">{leagueName}</CardTitle>
+              <p className="text-sm text-fc-fg/60">Aktueller Tabellenstand mit Form der letzten fünf Spiele.</p>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto overscroll-x-contain">
+                <table className="w-full min-w-[720px] border-collapse text-left" aria-label={`Tabelle ${leagueName}`}>
+                  <caption className="sr-only">
+                    Tabelle mit Platz, Verein, Spielen, Siegen, Unentschieden, Niederlagen, Toren, Differenz, Punkten und Form.
+                  </caption>
+                  <thead>
+                    <tr className="bg-fc-surface/90">
+                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                        <abbr title="Platz" className="no-underline">#</abbr>
+                      </th>
+                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                        Verein
+                      </th>
+                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                        <abbr title="Spiele" className="no-underline">Sp</abbr>
+                      </th>
+                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                        <abbr title="Siege" className="no-underline">S</abbr>
+                      </th>
+                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                        <abbr title="Unentschieden" className="no-underline">U</abbr>
+                      </th>
+                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                        <abbr title="Niederlagen" className="no-underline">N</abbr>
+                      </th>
+                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                        Tore
+                      </th>
+                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                        <abbr title="Tordifferenz" className="no-underline">Diff</abbr>
+                      </th>
+                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                        <abbr title="Punkte" className="no-underline">Pkt</abbr>
+                      </th>
+                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                        Form
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-card">
+                    {standings.map((s, idx) => (
+                      <StandingRow key={s.id} standing={s} index={idx} isAue={Boolean(s.team.isOwn)} />
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-        <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-fc-fg/60">
+        <div className="mt-6 grid grid-cols-2 gap-4 text-sm text-fc-fg/60 md:grid-cols-4">
           <div className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4 text-fc-win" />
             <span>S = Sieg</span>
