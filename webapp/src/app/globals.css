@@ -15,38 +15,41 @@
 
 @layer base {
   :root {
+    color-scheme: dark;
     --background: var(--color-fc-bg);
     --foreground: var(--color-fc-fg);
     --border: var(--color-fc-border);
     --card: var(--color-fc-surface);
     --card-foreground: var(--color-fc-fg);
     --primary: var(--color-fc-violet);
-    --primary-foreground: var(--color-fc-fg);
+    --primary-foreground: #FFFFFF;
     --secondary: var(--color-fc-surface);
     --secondary-foreground: var(--color-fc-fg);
     --muted: var(--color-fc-border);
-    --muted-foreground: var(--color-fc-fg);
+    --muted-foreground: color-mix(in srgb, var(--color-fc-fg) 72%, var(--color-fc-violet-light) 28%);
     --accent: var(--color-fc-violet-light);
-    --accent-foreground: var(--color-fc-fg);
+    --accent-foreground: #FFFFFF;
     --destructive: var(--color-fc-loss);
-    --destructive-foreground: var(--color-fc-fg);
-    --ring: var(--color-fc-violet);
+    --destructive-foreground: #FFFFFF;
+    --ring: var(--color-fc-violet-light);
   }
 }
 
+/* Respect explicit dark-first theme; only apply light tokens when dark is not forced. */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
     --background: #FAF8FF;
     --foreground: #1A1325;
-    --border: #E8E0F0;
+    --border: #E0D6ED;
     --card: #FFFFFF;
     --card-foreground: #1A1325;
     --primary: #5C2D91;
     --primary-foreground: #FFFFFF;
-    --secondary: #F0EBF5;
+    --secondary: #F3EDF9;
     --secondary-foreground: #1A1325;
-    --muted: #E8E0F0;
-    --muted-foreground: #5C2D91;
+    --muted: #E9E1F2;
+    --muted-foreground: #5A4A73;
     --accent: #7C3FBF;
     --accent-foreground: #FFFFFF;
     --destructive: #A33A48;
