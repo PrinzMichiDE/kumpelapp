@@ -128,6 +128,25 @@ function eventLabel(type: string) {
   }
 }
 
+function eventTone(type: string) {
+  switch (type) {
+    case 'GOAL':
+    case 'PENALTY_GOAL':
+      return 'border-fc-win/30 bg-fc-win/10 text-fc-win'
+    case 'OWN_GOAL':
+      return 'border-fc-draw/30 bg-fc-draw/10 text-fc-draw'
+    case 'YELLOW_CARD':
+      return 'border-yellow-500/30 bg-yellow-500/10 text-yellow-300'
+    case 'YELLOW_RED':
+    case 'RED_CARD':
+      return 'border-fc-loss/30 bg-fc-loss/10 text-fc-loss'
+    case 'SUBSTITUTION':
+      return 'border-fc-violet/30 bg-fc-violet/10 text-fc-violet-light'
+    default:
+      return 'border-fc-border/70 bg-fc-surface/60 text-fc-fg/80'
+  }
+}
+
 export default async function SpielDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
 
@@ -165,6 +184,30 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
 
   const isFinished = match.status === 'FINISHED'
   const hasScore = match.homeGoals !== null && match.awayGoals !== null
+  const aueIsHome = match.homeTeam.isOwn
+  const aueIsAway = match.awayTeam.isOwn
+  const auePerspective = aueIsHome || aueIsAway
+  const aueGoals = hasScore ? (aueIsHome ? match.homeGoals! : aueIsAway ? match.awayGoals! : null) : null
+  const oppGoals = hasScore ? (aueIsHome ? match.awayGoals! : aueIsAway ? match.homeGoals! : null) : null
+  const aueResult =
+    auePerspective && aueGoals !== null && oppGoals !== null
+      ? aueGoals > oppGoals
+        ? { label: 'Sieg', tone: 'text-fc-win border-fc-win/30 bg-fc-win/10' }
+        : aueGoals === oppGoals
+          ? { label: 'Unentschieden', tone: 'text-fc-draw border-fc-draw/30 bg-fc-draw/10' }
+          : { label: 'Niederlage', tone: 'text-fc-loss border-fc-loss/30 bg-fc-loss/10' }
+      : null
+  const events = match.events ?? []
+  const eventStats = events.reduce(
+    (acc, ev) => {
+      if (ev.type === 'GOAL' || ev.type === 'OWN_GOAL' || ev.type === 'PENALTY_GOAL') acc.goals += 1
+      if (ev.type === 'YELLOW_CARD' || ev.type === 'YELLOW_RED') acc.yellows += 1
+      if (ev.type === 'RED_CARD' || ev.type === 'YELLOW_RED') acc.reds += 1
+      if (ev.type === 'SUBSTITUTION') acc.subs += 1
+      return acc
+    },
+    { goals: 0, yellows: 0, reds: 0, subs: 0 },
+  )
 
   return (
     <div className="min-h-screen bg-fc-bg">
@@ -187,6 +230,11 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                   </Badge>
                 ) : null}
                 {statusBadge(match.status)}
+                {aueResult ? (
+                  <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold', aueResult.tone)}>
+                    Aue: {aueResult.label}
+                  </span>
+                ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-4 text-sm text-fc-fg/70">
                 <span className="inline-flex items-center gap-1.5">
@@ -231,6 +279,27 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                 <p className="mt-1 text-sm text-fc-fg/50">Auswärts</p>
               </div>
             </div>
+
+            {auePerspective && (hasScore || events.length > 0) ? (
+              <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="rounded-xl border border-fc-border/70 bg-fc-surface/40 p-3 text-center">
+                  <p className="text-xs uppercase tracking-wide text-fc-fg/55">Tore (Events)</p>
+                  <p className="mt-1 text-lg font-bold tabular-nums text-fc-fg">{eventStats.goals}</p>
+                </div>
+                <div className="rounded-xl border border-fc-border/70 bg-fc-surface/40 p-3 text-center">
+                  <p className="text-xs uppercase tracking-wide text-fc-fg/55">Gelb</p>
+                  <p className="mt-1 text-lg font-bold tabular-nums text-fc-fg">{eventStats.yellows}</p>
+                </div>
+                <div className="rounded-xl border border-fc-border/70 bg-fc-surface/40 p-3 text-center">
+                  <p className="text-xs uppercase tracking-wide text-fc-fg/55">Rot</p>
+                  <p className="mt-1 text-lg font-bold tabular-nums text-fc-fg">{eventStats.reds}</p>
+                </div>
+                <div className="rounded-xl border border-fc-border/70 bg-fc-surface/40 p-3 text-center">
+                  <p className="text-xs uppercase tracking-wide text-fc-fg/55">Wechsel</p>
+                  <p className="mt-1 text-lg font-bold tabular-nums text-fc-fg">{eventStats.subs}</p>
+                </div>
+              </div>
+            ) : null}
 
             {match.editorNote ? (
               <div className="mt-6 rounded-lg border border-fc-violet/20 bg-fc-violet/5 p-4 text-sm text-fc-fg/80">
@@ -349,25 +418,34 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
           </Card>
         </div>
 
-        {match.events && match.events.length > 0 ? (
+        {events.length > 0 ? (
           <Card className="mt-6">
             <CardHeader>
               <CardTitle className="text-lg">Spielereignisse</CardTitle>
+              <p className="text-sm text-fc-fg/60">
+                {events.length} {events.length === 1 ? 'Ereignis' : 'Ereignisse'} im Verlauf
+              </p>
             </CardHeader>
             <CardContent>
               <ol className="space-y-3" aria-label="Spielverlauf">
-                {match.events.map((ev) => (
+                {events.map((ev) => (
                   <li key={ev.id} className="flex items-start gap-3 rounded-lg border border-fc-border/70 bg-fc-surface/40 p-3">
-                    <span className="inline-flex h-7 min-w-7 items-center justify-center rounded-md bg-fc-violet/15 px-2 text-xs font-semibold text-fc-violet-light tabular-nums">
+                    <span className={cn('inline-flex h-7 min-w-7 items-center justify-center rounded-md border px-2 text-xs font-semibold tabular-nums', eventTone(ev.type))}>
                       {ev.minute}&apos;
                     </span>
-                    <div className="min-w-0">
-                      <p className="font-medium text-fc-fg">
-                        {eventLabel(ev.type)}
-                        {ev.player ? <span className="font-normal text-fc-fg/80"> – {ev.player}</span> : null}
-                      </p>
-                      {ev.text ? <p className="text-sm text-fc-fg/60">{ev.text}</p> : null}
-                      {ev.side ? <p className="text-xs text-fc-fg/50">{ev.side === 'HOME' ? 'Heim' : ev.side === 'AWAY' ? 'Auswärts' : ev.side}</p> : null}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="font-medium text-fc-fg">
+                          {eventLabel(ev.type)}
+                          {ev.player ? <span className="font-normal text-fc-fg/80"> – {ev.player}</span> : null}
+                        </p>
+                        {ev.side ? (
+                          <span className="rounded-md bg-fc-bg/40 px-2 py-0.5 text-xs text-fc-fg/60">
+                            {ev.side === 'HOME' ? `Heim · ${match.homeTeam.shortName || match.homeTeam.name}` : ev.side === 'AWAY' ? `Auswärts · ${match.awayTeam.shortName || match.awayTeam.name}` : ev.side}
+                          </span>
+                        ) : null}
+                      </div>
+                      {ev.text ? <p className="mt-0.5 text-sm text-fc-fg/60">{ev.text}</p> : null}
                     </div>
                   </li>
                 ))}
@@ -383,7 +461,16 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
               <p className="text-sm text-fc-fg/60">Noch keine Ereignisse erfasst.</p>
             </CardContent>
           </Card>
-        ) : null}
+        ) : (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="text-lg">Spielereignisse</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-fc-fg/60">Ereignisse werden bei Anpfiff bzw. nach Erfassung angezeigt.</p>
+            </CardContent>
+          </Card>
+        )}
 
         {match.streams && match.streams.length > 0 ? (
           <Card className="mt-6">
