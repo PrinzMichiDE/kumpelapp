@@ -24,6 +24,7 @@ const navigation = [
   { name: 'Auswärts', href: '/auswaerts' },
   { name: 'Verein', href: '/verein' },
   { name: 'Tradition', href: '/tradition' },
+  { name: 'Quiz', href: '/quiz' },
   { name: 'Fans', href: '/fans' },
 ]
 
