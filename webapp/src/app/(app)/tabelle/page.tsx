@@ -164,6 +164,24 @@ export default async function TabellePage() {
     console.error('Tabelle load error', e)
   }
 
+  const aueStanding = standings.find((s) => s.team.isOwn)
+  const leader = standings[0]
+  const aueIndex = aueStanding ? standings.findIndex((s) => s.id === aueStanding.id) : -1
+  const teamAboveAue = aueIndex > 0 ? standings[aueIndex - 1] : null
+  const teamBelowAue = aueIndex >= 0 && aueIndex < standings.length - 1 ? standings[aueIndex + 1] : null
+  const aueGapToLeader = aueStanding && leader ? leader.points - aueStanding.points : null
+  const aueGapToAbove = aueStanding && teamAboveAue ? teamAboveAue.points - aueStanding.points : null
+  const aueGapToBelow = aueStanding && teamBelowAue ? aueStanding.points - teamBelowAue.points : null
+  const auePpg = aueStanding && aueStanding.played > 0 ? (aueStanding.points / aueStanding.played).toFixed(2) : null
+  const aueFormText = aueStanding?.form
+    ? aueStanding.form
+        .split(',')
+        .filter(Boolean)
+        .slice(-5)
+        .map((r) => (r === 'W' ? 'S' : r === 'D' ? 'U' : r === 'L' ? 'N' : r))
+        .join(' ')
+    : null
+
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -192,60 +210,124 @@ export default async function TabellePage() {
             </p>
           </div>
         ) : (
-          <Card className="overflow-hidden">
-            <CardHeader className="border-b border-fc-border/70">
-              <CardTitle className="text-xl">{leagueName}</CardTitle>
-              <p className="text-sm text-fc-fg/60">Aktueller Tabellenstand mit Form der letzten fünf Spiele.</p>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto overscroll-x-contain">
-                <table className="w-full min-w-[720px] border-collapse text-left" aria-label={`Tabelle ${leagueName}`}>
-                  <caption className="sr-only">
-                    Tabelle mit Platz, Verein, Spielen, Siegen, Unentschieden, Niederlagen, Toren, Differenz, Punkten und Form.
-                  </caption>
-                  <thead>
-                    <tr className="bg-fc-surface/90">
-                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                        <abbr title="Platz" className="no-underline">#</abbr>
-                      </th>
-                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                        Verein
-                      </th>
-                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                        <abbr title="Spiele" className="no-underline">Sp</abbr>
-                      </th>
-                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                        <abbr title="Siege" className="no-underline">S</abbr>
-                      </th>
-                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                        <abbr title="Unentschieden" className="no-underline">U</abbr>
-                      </th>
-                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                        <abbr title="Niederlagen" className="no-underline">N</abbr>
-                      </th>
-                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                        Tore
-                      </th>
-                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                        <abbr title="Tordifferenz" className="no-underline">Diff</abbr>
-                      </th>
-                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                        <abbr title="Punkte" className="no-underline">Pkt</abbr>
-                      </th>
-                      <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
-                        Form
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-card">
-                    {standings.map((s, idx) => (
-                      <StandingRow key={s.id} standing={s} index={idx} isAue={Boolean(s.team.isOwn)} />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            {aueStanding ? (
+              <Card className="border-fc-violet/30 bg-gradient-to-br from-fc-violet/10 via-fc-surface/70 to-fc-surface/40">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex flex-wrap items-center gap-2 text-xl text-fc-fg">
+                    <Trophy className="h-5 w-5 text-fc-violet" aria-hidden="true" />
+                    Veilchen-Status
+                  </CardTitle>
+                  <p className="text-sm text-fc-fg/70">
+                    {aueStanding.team.shortName || aueStanding.team.name} · Platz {aueStanding.position}
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+                    <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
+                      <p className="text-xs uppercase tracking-wide text-fc-fg/55">Punkte</p>
+                      <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">{aueStanding.points}</p>
+                    </div>
+                    <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
+                      <p className="text-xs uppercase tracking-wide text-fc-fg/55">Spiele</p>
+                      <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">{aueStanding.played}</p>
+                    </div>
+                    <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
+                      <p className="text-xs uppercase tracking-wide text-fc-fg/55">Tordifferenz</p>
+                      <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">
+                        {(aueStanding.goalDifference ?? aueStanding.goalsFor - aueStanding.goalsAgainst) >= 0 ? '+' : ''}
+                        {aueStanding.goalDifference ?? aueStanding.goalsFor - aueStanding.goalsAgainst}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
+                      <p className="text-xs uppercase tracking-wide text-fc-fg/55">Punkte/Spiel</p>
+                      <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">{auePpg ?? '–'}</p>
+                    </div>
+                    <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
+                      <p className="text-xs uppercase tracking-wide text-fc-fg/55">Abstand Spitze</p>
+                      <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">
+                        {aueGapToLeader === null ? '–' : aueGapToLeader === 0 ? '0' : `−${aueGapToLeader}`}
+                      </p>
+                    </div>
+                    <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
+                      <p className="text-xs uppercase tracking-wide text-fc-fg/55">Form (5)</p>
+                      <p className="mt-1 text-sm font-semibold text-fc-fg">{aueFormText ?? '–'}</p>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-fc-fg/70">
+                    <span>
+                      Bilanz: <span className="font-medium text-fc-fg">{aueStanding.won}S · {aueStanding.drawn}U · {aueStanding.lost}N</span>
+                    </span>
+                    {teamAboveAue && aueGapToAbove !== null ? (
+                      <span>
+                        Zum Platz davor ({teamAboveAue.team.shortName || teamAboveAue.team.name}): <span className="font-medium text-fc-fg">−{aueGapToAbove} Pkt</span>
+                      </span>
+                    ) : null}
+                    {teamBelowAue && aueGapToBelow !== null ? (
+                      <span>
+                        Vorsprung auf Platz dahinter ({teamBelowAue.team.shortName || teamBelowAue.team.name}): <span className="font-medium text-fc-fg">+{aueGapToBelow} Pkt</span>
+                      </span>
+                    ) : null}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <Card className="overflow-hidden">
+              <CardHeader className="border-b border-fc-border/70">
+                <CardTitle className="text-xl">{leagueName}</CardTitle>
+                <p className="text-sm text-fc-fg/60">Aktueller Tabellenstand mit Form der letzten fünf Spiele.</p>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto overscroll-x-contain">
+                  <table className="w-full min-w-[720px] border-collapse text-left" aria-label={`Tabelle ${leagueName}`}>
+                    <caption className="sr-only">
+                      Tabelle mit Platz, Verein, Spielen, Siegen, Unentschieden, Niederlagen, Toren, Differenz, Punkten und Form.
+                    </caption>
+                    <thead>
+                      <tr className="bg-fc-surface/90">
+                        <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                          <abbr title="Platz" className="no-underline">#</abbr>
+                        </th>
+                        <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                          Verein
+                        </th>
+                        <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                          <abbr title="Spiele" className="no-underline">Sp</abbr>
+                        </th>
+                        <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                          <abbr title="Siege" className="no-underline">S</abbr>
+                        </th>
+                        <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                          <abbr title="Unentschieden" className="no-underline">U</abbr>
+                        </th>
+                        <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                          <abbr title="Niederlagen" className="no-underline">N</abbr>
+                        </th>
+                        <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                          Tore
+                        </th>
+                        <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                          <abbr title="Tordifferenz" className="no-underline">Diff</abbr>
+                        </th>
+                        <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                          <abbr title="Punkte" className="no-underline">Pkt</abbr>
+                        </th>
+                        <th scope="col" className="sticky top-0 bg-fc-surface/95 px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">
+                          Form
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-card">
+                      {standings.map((s, idx) => (
+                        <StandingRow key={s.id} standing={s} index={idx} isAue={Boolean(s.team.isOwn)} />
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
 
         <div className="mt-6 grid grid-cols-2 gap-4 text-sm text-fc-fg/60 md:grid-cols-4">
