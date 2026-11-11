@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { prisma } from '@kumpelapp/db'
 import { Card, CardContent } from '@kumpelapp/ui'
-import { ArrowRight, Brain, Clock, History, SearchX, Trophy, User, type LucideIcon } from 'lucide-react'
+import { ArrowRight, Brain, SearchX, Trophy, User, type LucideIcon } from 'lucide-react'
 import { cn } from '@kumpelapp/utils'
+import { TraditionExplorer } from './tradition-explorer'
 
 export const dynamic = 'force-dynamic'
 
@@ -133,48 +134,6 @@ export default async function TraditionPage() {
           )}
         </section>
 
-        <section className="mb-12" aria-labelledby="records-heading">
-          <SectionHeading id="records-heading" icon={History} title="Saisonhistorie" accent="bg-sky-500/12 text-sky-300 ring-sky-400/20" />
-          {seasonRecords.length ? (
-            <Card className="overflow-hidden">
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[640px] border-collapse text-left" aria-label="Saisonhistorie">
-                    <thead>
-                      <tr className="bg-fc-surface/90">
-                        <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-fc-fg/65">Saison</th>
-                        <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-fc-fg/65">Liga</th>
-                        <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">Ebene</th>
-                        <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">Platz</th>
-                        <th scope="col" className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wider text-fc-fg/65">Punkte</th>
-                        <th scope="col" className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-fc-fg/65">Hinweis</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {seasonRecords.map((r) => (
-                        <tr key={r.id} className="border-t border-fc-border/70 hover:bg-fc-violet/5">
-                          <td className="px-4 py-3 font-medium text-fc-fg">{r.label}</td>
-                          <td className="px-4 py-3 text-fc-fg/80">{r.leagueName}</td>
-                          <td className="px-4 py-3 text-center tabular-nums text-fc-fg/80">{r.tier ?? '–'}</td>
-                          <td className="px-4 py-3 text-center tabular-nums text-fc-fg/80">{r.position ?? '–'}</td>
-                          <td className="px-4 py-3 text-center tabular-nums text-fc-fg/80">{r.points ?? '–'}</td>
-                          <td className="px-4 py-3 text-sm text-fc-fg/65">{r.note ?? '–'}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-fc-border/70 bg-fc-surface/40 py-12 text-center text-fc-fg/70">
-              <SearchX className="h-10 w-10 text-fc-fg/40" aria-hidden="true" />
-              <p className="text-base font-medium text-fc-fg">Keine Saisonhistorie hinterlegt</p>
-              <p className="max-w-md text-sm text-fc-fg/60">Synchronisiere Traditionsdaten im Admin-Bereich, um Saisonabschlüsse und Platzierungen anzuzeigen.</p>
-            </div>
-          )}
-        </section>
-
         <section className="mb-12" aria-labelledby="legends-heading">
           <SectionHeading id="legends-heading" icon={User} title="Legenden" accent="bg-fc-violet/12 text-fc-violet ring-fc-violet/20" />
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -236,31 +195,9 @@ export default async function TraditionPage() {
           </Card>
         </section>
 
-        <section className="mb-4" aria-labelledby="timeline-heading">
-          <SectionHeading id="timeline-heading" icon={Clock} title="Zeitstrahl – 80 Jahre" accent="bg-orange-500/12 text-orange-300 ring-orange-400/20" />
-          <ol className="relative ml-3 border-l-2 border-fc-violet/25 pl-7 sm:ml-4 sm:pl-8">
-            {timeline.map((event, index) => (
-              <li key={`${event.year}-${event.title}`} className="relative pb-8 last:pb-0">
-                <span
-                  className={cn(
-                    'absolute -left-[calc(0.875rem+1px)] top-1 flex h-4 w-4 items-center justify-center rounded-full border-2 border-fc-bg',
-                    index === timeline.length - 1 ? 'bg-fc-violet-light shadow-sm shadow-fc-violet/30' : 'bg-fc-violet'
-                  )}
-                  aria-hidden="true"
-                />
-                <div className="rounded-xl border border-transparent px-1 py-0.5 transition-colors hover:border-fc-border/50 hover:bg-fc-surface/25">
-                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                    <time className="text-lg font-bold tabular-nums text-fc-violet" dateTime={String(event.year)}>
-                      {event.year}
-                    </time>
-                    <h3 className="text-base font-semibold leading-snug text-fc-fg sm:text-lg">{event.title}</h3>
-                  </div>
-                  <p className="mt-1 text-sm leading-relaxed text-fc-fg/70">{event.description}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+        <div className="mb-4">
+          <TraditionExplorer timeline={timeline} seasonRecords={seasonRecords} />
+        </div>
       </div>
     </div>
   )
