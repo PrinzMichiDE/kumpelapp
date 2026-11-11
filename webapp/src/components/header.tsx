@@ -71,28 +71,41 @@ export function Header() {
           <span className="hidden text-lg font-bold tracking-tight text-fc-fg sm:block">KumpelApp</span>
         </Link>
 
-        <div className="hidden min-w-0 flex-1 items-center justify-center lg:flex">
-          <ul className="flex items-center gap-1">
-            {navigation.map((item) => {
-              const active = isActivePath(pathname, item.href)
-              return (
-                <li key={item.name}>
-                  <Link
-                    href={item.href}
-                    className={cn(
-                      'relative inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface',
-                      active
-                        ? 'bg-fc-violet text-white shadow-sm shadow-fc-violet/20'
-                        : 'text-fc-fg/75 hover:bg-fc-violet/10 hover:text-fc-fg'
-                    )}
-                    aria-current={active ? 'page' : undefined}
-                  >
-                    {item.name}
-                  </Link>
-                </li>
-              )
-            })}
-          </ul>
+        <div className="hidden min-w-0 flex-1 lg:flex lg:items-center lg:justify-center">
+          <div className="relative w-full max-w-3xl xl:max-w-4xl">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-fc-surface/95 to-transparent supports-[backdrop-filter]:from-fc-surface/80"
+            />
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-fc-surface/95 to-transparent supports-[backdrop-filter]:from-fc-surface/80"
+            />
+            <ul
+              className="flex items-center gap-1 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              aria-label="Hauptbereiche"
+            >
+              {navigation.map((item) => {
+                const active = isActivePath(pathname, item.href)
+                return (
+                  <li key={item.name} className="shrink-0">
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        'relative inline-flex items-center whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium transition-[color,background-color,box-shadow,transform] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface active:scale-[0.98] motion-reduce:transform-none',
+                        active
+                          ? 'bg-fc-violet text-white shadow-sm shadow-fc-violet/20'
+                          : 'text-fc-fg/75 hover:bg-fc-violet/10 hover:text-fc-fg'
+                      )}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      {item.name}
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
         </div>
 
         <div className="hidden shrink-0 items-center gap-2 lg:flex">
