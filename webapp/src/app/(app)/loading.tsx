@@ -5,7 +5,7 @@ function Bone({ className }: { className?: string }) {
     <div
       aria-hidden="true"
       className={cn(
-        'animate-pulse rounded-lg bg-fc-surface/80 ring-1 ring-inset ring-fc-border/40 motion-reduce:animate-none',
+        'animate-fc-shimmer rounded-lg bg-fc-surface/70 ring-1 ring-inset ring-fc-border/40 motion-reduce:animate-pulse',
         className
       )}
     />
@@ -17,10 +17,18 @@ export default function AppLoading() {
     <div className="min-h-screen bg-fc-bg" role="status" aria-live="polite" aria-busy="true">
       <span className="sr-only">Inhalt wird geladen</span>
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 space-y-3">
-          <Bone className="h-9 w-56 max-w-full rounded-xl sm:h-10 sm:w-72" />
-          <Bone className="h-4 w-full max-w-xl" />
-          <Bone className="h-4 w-2/3 max-w-md" />
+        <div className="mb-8 flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1 space-y-3">
+            <Bone className="h-9 w-56 max-w-full rounded-xl sm:h-10 sm:w-72" />
+            <Bone className="h-4 w-full max-w-xl" />
+            <Bone className="h-4 w-2/3 max-w-md" />
+          </div>
+          <div
+            aria-hidden="true"
+            className="hidden h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-fc-violet/10 ring-1 ring-inset ring-fc-violet/20 sm:flex"
+          >
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-fc-violet/25 border-t-fc-violet motion-reduce:animate-none" />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">

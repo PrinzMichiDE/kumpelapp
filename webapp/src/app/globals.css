@@ -98,9 +98,29 @@ body {
   }
 }
 
+@keyframes fc-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .animate-fc-slide-down {
     animation: fc-slide-down 180ms ease-out both;
+  }
+
+  .animate-fc-shimmer {
+    background-image: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--card) 82%, transparent) 0%,
+      color-mix(in srgb, var(--primary) 18%, var(--card)) 50%,
+      color-mix(in srgb, var(--card) 82%, transparent) 100%
+    );
+    background-size: 200% 100%;
+    animation: fc-shimmer 1.6s ease-in-out infinite;
   }
 }
 
