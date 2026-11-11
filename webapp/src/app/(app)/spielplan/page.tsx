@@ -218,24 +218,31 @@ function toDto(m: {
 export default async function SpielplanPage({
   searchParams,
 }: {
-  searchParams: Promise<{ timeframe?: string }>
+  searchParams: Promise<{ timeframe?: string; location?: string }>
 }) {
-  const { timeframe = 'all' } = await searchParams
+  const { timeframe = 'all', location = 'all' } = await searchParams
   const now = new Date()
 
   let matches: MatchDto[] = []
   let error: string | null = null
 
-  try {
-    const where =
-      timeframe === 'upcoming'
-        ? { kickoff: { gte: now } }
-        : timeframe === 'past'
-          ? { kickoff: { lt: now } }
-          : {}
+  const timeframeWhere =
+    timeframe === 'upcoming'
+      ? { kickoff: { gte: now } }
+      : timeframe === 'past'
+        ? { kickoff: { lt: now } }
+        : {}
 
+  const locationWhere =
+    location === 'home'
+      ? { homeTeam: { isOwn: true } }
+      : location === 'away'
+        ? { awayTeam: { isOwn: true } }
+        : {}
+
+  try {
     const rows = await prisma.match.findMany({
-      where,
+      where: { ...timeframeWhere, ...locationWhere },
       include: {
         venue: {
           select: {
@@ -266,11 +273,40 @@ export default async function SpielplanPage({
     console.error('Spielplan load error', e)
   }
 
-  const filters = [
+  const timeframeFilters = [
     { value: 'all', label: 'Alle Spiele' },
     { value: 'upcoming', label: 'Kommende' },
     { value: 'past', label: 'Vergangene' },
   ] as const
+
+  const locationFilters = [
+    { value: 'all', label: 'Heim & Auswärts' },
+    { value: 'home', label: 'Nur Heim' },
+    { value: 'away', label: 'Nur Auswärts' },
+  ] as const
+
+  function buildHref(next: { timeframe?: string; location?: string }) {
+    const params = new URLSearchParams()
+    const tf = next.timeframe ?? timeframe
+    const loc = next.location ?? location
+    if (tf && tf !== 'all') params.set('timeframe', tf)
+    if (loc && loc !== 'all') params.set('location', loc)
+    const qs = params.toString()
+    return qs ? `/spielplan?${qs}` : '/spielplan'
+  }
+
+  const finishedAue = matches.filter((m) => m.status === 'FINISHED' && m.homeGoals !== null && m.awayGoals !== null)
+  const summary = finishedAue.reduce(
+    (acc, m) => {
+      const aueGoals = m.homeTeam.isOwn ? (m.homeGoals ?? 0) : (m.awayGoals ?? 0)
+      const oppGoals = m.homeTeam.isOwn ? (m.awayGoals ?? 0) : (m.homeGoals ?? 0)
+      if (aueGoals > oppGoals) acc.wins += 1
+      else if (aueGoals === oppGoals) acc.draws += 1
+      else acc.losses += 1
+      return acc
+    },
+    { wins: 0, draws: 0, losses: 0 },
+  )
 
   return (
     <div className="min-h-screen bg-fc-bg">
@@ -280,36 +316,73 @@ export default async function SpielplanPage({
           <p className="mt-2 text-fc-fg/70">Alle Spiele der aktuellen Saison – Regionalliga Nordost</p>
         </div>
 
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
-          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-            <span className="text-sm font-medium text-fc-fg/80">Zeitraum</span>
-            <div className="flex flex-wrap gap-2" role="group" aria-label="Spielplan filtern">
-              {filters.map((f) => {
-                const active = timeframe === f.value
-                const href = f.value === 'all' ? '/spielplan' : `/spielplan?timeframe=${f.value}`
-                return (
-                  <Link
-                    key={f.value}
-                    href={href}
-                    className={cn(
-                      'inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg',
-                      active
-                        ? 'bg-fc-violet text-white shadow-sm shadow-fc-violet/20'
-                        : 'border border-fc-border bg-fc-surface text-fc-fg hover:border-fc-violet/35 hover:bg-fc-violet/10'
-                    )}
-                    aria-current={active ? 'page' : undefined}
-                  >
-                    {f.label}
-                  </Link>
-                )
-              })}
+        <div className="mb-6 space-y-4">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="grid flex-1 gap-4 sm:grid-cols-2">
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <span className="text-sm font-medium text-fc-fg/80">Zeitraum</span>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Zeitraum filtern">
+                  {timeframeFilters.map((f) => {
+                    const active = timeframe === f.value
+                    return (
+                      <Link
+                        key={f.value}
+                        href={buildHref({ timeframe: f.value })}
+                        className={cn(
+                          'inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg',
+                          active
+                            ? 'bg-fc-violet text-white shadow-sm shadow-fc-violet/20'
+                            : 'border border-fc-border bg-fc-surface text-fc-fg hover:border-fc-violet/35 hover:bg-fc-violet/10'
+                        )}
+                        aria-current={active ? 'page' : undefined}
+                      >
+                        {f.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <span className="text-sm font-medium text-fc-fg/80">Spielort</span>
+                <div className="flex flex-wrap gap-2" role="group" aria-label="Spielort filtern">
+                  {locationFilters.map((f) => {
+                    const active = location === f.value
+                    return (
+                      <Link
+                        key={f.value}
+                        href={buildHref({ location: f.value })}
+                        className={cn(
+                          'inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg',
+                          active
+                            ? 'bg-fc-violet text-white shadow-sm shadow-fc-violet/20'
+                            : 'border border-fc-border bg-fc-surface text-fc-fg hover:border-fc-violet/35 hover:bg-fc-violet/10'
+                        )}
+                        aria-current={active ? 'page' : undefined}
+                      >
+                        {f.label}
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
             </div>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-fc-fg/60">
-            <Calendar className="h-4 w-4" aria-hidden="true" />
-            <span>
-              {matches.length} {matches.length === 1 ? 'Spiel' : 'Spiele'}
-            </span>
+
+            <div className="flex flex-wrap items-center gap-3 text-sm text-fc-fg/70">
+              <span className="inline-flex items-center gap-2 rounded-lg border border-fc-border/70 bg-fc-surface/60 px-3 py-2">
+                <Calendar className="h-4 w-4" aria-hidden="true" />
+                <span className="font-medium text-fc-fg">{matches.length}</span>
+                <span>{matches.length === 1 ? 'Spiel' : 'Spiele'}</span>
+              </span>
+              {finishedAue.length > 0 ? (
+                <span className="inline-flex items-center gap-2 rounded-lg border border-fc-border/70 bg-fc-surface/60 px-3 py-2">
+                  <span className="text-fc-win font-semibold">{summary.wins}S</span>
+                  <span className="text-fc-draw font-semibold">{summary.draws}U</span>
+                  <span className="text-fc-loss font-semibold">{summary.losses}N</span>
+                  <span className="text-fc-fg/55">in Auswahl</span>
+                </span>
+              ) : null}
+            </div>
           </div>
         </div>
 
@@ -323,7 +396,7 @@ export default async function SpielplanPage({
             <SearchX className="h-10 w-10 text-fc-fg/40" aria-hidden="true" />
             <p className="text-base font-medium text-fc-fg">Keine Spiele gefunden</p>
             <p className="max-w-md text-sm text-fc-fg/60">
-              Für den gewählten Zeitraum sind aktuell keine Spiele hinterlegt. Synchronisiere die Spieldaten im Admin-Bereich oder wähle einen anderen Filter.
+              Für die gewählten Filter sind aktuell keine Spiele hinterlegt. Passe Zeitraum/Spielort an oder synchronisiere Spieldaten im Admin-Bereich.
             </p>
           </div>
         ) : (
