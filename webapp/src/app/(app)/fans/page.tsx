@@ -3,6 +3,7 @@ import { prisma } from '@kumpelapp/db'
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
 import { Baby, ChevronRight, ExternalLink, Heart, MapPin, Phone, SearchX, Shield, Users, Volume2, Building2, Mail, Globe, type LucideIcon } from 'lucide-react'
 import { cn } from '@kumpelapp/utils'
+import { FansExplorer } from './fans-explorer'
 
 export const dynamic = 'force-dynamic'
 
@@ -138,6 +139,8 @@ export default async function FansPage() {
             </p>
           )}
         </div>
+
+        <FansExplorer fanclubs={fanclubs} contacts={contacts} departments={departments} links={links} />
 
         <div className="mb-12 grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3 sm:gap-6">
           {navCards.map((card) => (
