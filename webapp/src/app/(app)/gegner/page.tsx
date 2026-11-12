@@ -163,12 +163,16 @@ export default async function GegnerPage() {
     }
 
     opponents = Array.from(map.values())
-      .map((o) => ({
-        ...o,
-        points: o.wins * 3 + o.draws,
-        goalDifference: o.goalsFor - o.goalsAgainst,
-        pointsPerGame: o.played > 0 ? o.points / o.played : 0,
-      }))
+      .map((o) => {
+        const points = o.wins * 3 + o.draws
+        const goalDifference = o.goalsFor - o.goalsAgainst
+        return {
+          ...o,
+          points,
+          goalDifference,
+          pointsPerGame: o.played > 0 ? points / o.played : 0,
+        }
+      })
       .sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || a.name.localeCompare(b.name, 'de'))
   } catch (e) {
     error = 'Gegnerbilanz konnte nicht geladen werden. Bitte versuche es später erneut.'
