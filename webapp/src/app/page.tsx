@@ -1,6 +1,6 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { AlertTriangle, ArrowRight, BarChart3, Brain, Building, Calendar, CheckCircle, Clock, Heart, History, MapPin, Newspaper, Trophy, Users, type LucideIcon } from 'lucide-react'
+import { AlertTriangle, ArrowRight, BarChart3, Brain, Building, Calendar, CheckCircle, Clock, Heart, History, MapPin, Newspaper, Swords, Trophy, Users, type LucideIcon } from 'lucide-react'
 import { prisma } from '@kumpelapp/db'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
 import { cn, formatDate, formatDateTime, formatKickoff } from '@kumpelapp/utils'
@@ -19,6 +19,7 @@ const features = [
   { name: 'Spieltag', href: '/spielplan', icon: Calendar, description: 'Alle Spiele, Termine & Ergebnisse' },
   { name: 'Tabelle', href: '/tabelle', icon: Trophy, description: 'Aktuelle Regionalliga Nordost Tabelle' },
   { name: 'Saison', href: '/saison', icon: BarChart3, description: 'Ergebnisse, Formkurve & Saisonbilanz' },
+  { name: 'Bilanz', href: '/gegner', icon: Swords, description: 'Aues Bilanz gegen alle Gegner' },
   { name: 'Kader', href: '/kader', icon: Users, description: 'Spieler, Positionen & Statistiken' },
   { name: 'News', href: '/news', icon: Newspaper, description: 'Aktuelle Nachrichten vom Verein' },
   { name: 'Auswärts', href: '/auswaerts', icon: MapPin, description: 'Stadion-Guide & Anfahrtsinfos' },

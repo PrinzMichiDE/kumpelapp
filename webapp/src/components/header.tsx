@@ -20,6 +20,7 @@ const navigation = [
   { name: 'Spieltag', href: '/spielplan' },
   { name: 'Tabelle', href: '/tabelle' },
   { name: 'Saison', href: '/saison' },
+  { name: 'Bilanz', href: '/gegner' },
   { name: 'Kader', href: '/kader' },
   { name: 'News', href: '/news' },
   { name: 'Auswärts', href: '/auswaerts' },
