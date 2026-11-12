@@ -1,6 +1,27 @@
 import { Metadata } from 'next'
 import Link from 'next/link'
-import { AlertTriangle, ArrowRight, BarChart3, Brain, Building, Calendar, CheckCircle, Clock, Heart, History, MapPin, Newspaper, Swords, Trophy, Users, type LucideIcon } from 'lucide-react'
+import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  Brain,
+  Building,
+  Calendar,
+  CheckCircle,
+  Clock,
+  ExternalLink,
+  Heart,
+  History,
+  MapPin,
+  Newspaper,
+  Swords,
+  Ticket,
+  Trophy,
+  Tv,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { prisma } from '@kumpelapp/db'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
 import { cn, formatDate, formatDateTime, formatKickoff } from '@kumpelapp/utils'
@@ -35,6 +56,33 @@ const quickLinks = [
   { name: 'Offizielle Website', href: 'https://www.fc-erzgebirge.de', external: true, icon: CheckCircle },
 ]
 
+type MatchTeam = { name: string; shortName: string | null; isOwn: boolean }
+
+function teamLabel(t: MatchTeam) {
+  return t.shortName || t.name
+}
+
+function countdownText(kickoff: Date, now: Date) {
+  const diffMs = kickoff.getTime() - now.getTime()
+  if (diffMs <= 0) return 'Anpfiff steht an'
+  const totalMinutes = Math.floor(diffMs / 60000)
+  const days = Math.floor(totalMinutes / (60 * 24))
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60)
+  const minutes = totalMinutes % 60
+  if (days > 0) return `in ${days} ${days === 1 ? 'Tag' : 'Tagen'}${hours > 0 ? `, ${hours} Std.` : ''}`
+  if (hours > 0) return `in ${hours} Std.${minutes > 0 ? ` ${minutes} Min.` : ''}`
+  return `in ${minutes} Min.`
+}
+
+function resultForAue(homeGoals: number | null, awayGoals: number | null, homeIsOwn: boolean) {
+  if (homeGoals === null || awayGoals === null) return null
+  const aue = homeIsOwn ? homeGoals : awayGoals
+  const opp = homeIsOwn ? awayGoals : homeGoals
+  if (aue > opp) return { key: 'W' as const, label: 'Sieg', className: 'border-fc-win/30 bg-fc-win/10 text-fc-win' }
+  if (aue === opp) return { key: 'D' as const, label: 'Remis', className: 'border-fc-draw/30 bg-fc-draw/10 text-fc-draw' }
+  return { key: 'L' as const, label: 'Niederlage', className: 'border-fc-loss/30 bg-fc-loss/10 text-fc-loss' }
+}
+
 export default async function HomePage() {
   const now = new Date()
   let nextMatch: {
@@ -45,6 +93,9 @@ export default async function HomePage() {
     awayTeam: string
     homeIsOwn: boolean
     venue?: string | null
+    matchday: number | null
+    ticketShopUrl?: string | null
+    streams: { name: string; url: string }[]
   } | null = null
   let lastMatch: {
     id: string
@@ -54,15 +105,33 @@ export default async function HomePage() {
     awayTeam: string
     homeGoals: number | null
     awayGoals: number | null
+    homeIsOwn: boolean
   } | null = null
+  let recentResults: {
+    id: string
+    kickoff: Date
+    homeTeam: MatchTeam
+    awayTeam: MatchTeam
+    homeGoals: number | null
+    awayGoals: number | null
+  }[] = []
+  let upcomingMatches: {
+    id: string
+    kickoff: Date
+    status: string
+    homeTeam: MatchTeam
+    awayTeam: MatchTeam
+    venue?: string | null
+    matchday: number | null
+  }[] = []
   let aueStanding: { position: number; points: number; played: number; league: string; season?: string | null } | null = null
   let latestNews: { id: string; title: string; publishedAt: Date; source: string; externalUrl: string }[] = []
 
   try {
-    const [upcoming, finished, aueRow, news] = await Promise.all([
+    const [upcoming, finished, recent, upcomingList, aueRow, news] = await Promise.all([
       prisma.match.findFirst({
         where: {
-          kickoff: { gte: now },
+          kickoff: { gte: new Date(now.getTime() - 3 * 60 * 60 * 1000) },
           status: { in: ['SCHEDULED', 'LIVE', 'POSTPONED'] },
           OR: [{ homeTeam: { isOwn: true } }, { awayTeam: { isOwn: true } }],
         },
@@ -70,6 +139,8 @@ export default async function HomePage() {
           homeTeam: { select: { name: true, shortName: true, isOwn: true } },
           awayTeam: { select: { name: true, shortName: true, isOwn: true } },
           venue: { select: { name: true } },
+          sales: { take: 1, orderBy: { saleStart: 'asc' }, select: { shopUrl: true } },
+          streams: { select: { name: true, url: true } },
         },
         orderBy: { kickoff: 'asc' },
       }),
@@ -80,10 +151,37 @@ export default async function HomePage() {
           OR: [{ homeTeam: { isOwn: true } }, { awayTeam: { isOwn: true } }],
         },
         include: {
-          homeTeam: { select: { name: true, shortName: true } },
-          awayTeam: { select: { name: true, shortName: true } },
+          homeTeam: { select: { name: true, shortName: true, isOwn: true } },
+          awayTeam: { select: { name: true, shortName: true, isOwn: true } },
         },
         orderBy: { kickoff: 'desc' },
+      }),
+      prisma.match.findMany({
+        where: {
+          kickoff: { lt: now },
+          status: 'FINISHED',
+          OR: [{ homeTeam: { isOwn: true } }, { awayTeam: { isOwn: true } }],
+        },
+        include: {
+          homeTeam: { select: { name: true, shortName: true, isOwn: true } },
+          awayTeam: { select: { name: true, shortName: true, isOwn: true } },
+        },
+        orderBy: { kickoff: 'desc' },
+        take: 5,
+      }),
+      prisma.match.findMany({
+        where: {
+          kickoff: { gte: new Date(now.getTime() - 3 * 60 * 60 * 1000) },
+          status: { in: ['SCHEDULED', 'LIVE', 'POSTPONED'] },
+          OR: [{ homeTeam: { isOwn: true } }, { awayTeam: { isOwn: true } }],
+        },
+        include: {
+          homeTeam: { select: { name: true, shortName: true, isOwn: true } },
+          awayTeam: { select: { name: true, shortName: true, isOwn: true } },
+          venue: { select: { name: true } },
+        },
+        orderBy: { kickoff: 'asc' },
+        take: 4,
       }),
       prisma.standing.findFirst({
         where: { team: { isOwn: true } },
@@ -102,10 +200,13 @@ export default async function HomePage() {
         id: upcoming.id,
         kickoff: upcoming.kickoff,
         status: upcoming.status,
-        homeTeam: upcoming.homeTeam.shortName || upcoming.homeTeam.name,
-        awayTeam: upcoming.awayTeam.shortName || upcoming.awayTeam.name,
+        homeTeam: teamLabel(upcoming.homeTeam),
+        awayTeam: teamLabel(upcoming.awayTeam),
         homeIsOwn: upcoming.homeTeam.isOwn,
         venue: upcoming.venue?.name ?? null,
+        matchday: upcoming.matchday,
+        ticketShopUrl: upcoming.sales[0]?.shopUrl ?? null,
+        streams: upcoming.streams ?? [],
       }
     }
     if (finished) {
@@ -113,12 +214,30 @@ export default async function HomePage() {
         id: finished.id,
         kickoff: finished.kickoff,
         status: finished.status,
-        homeTeam: finished.homeTeam.shortName || finished.homeTeam.name,
-        awayTeam: finished.awayTeam.shortName || finished.awayTeam.name,
+        homeTeam: teamLabel(finished.homeTeam),
+        awayTeam: teamLabel(finished.awayTeam),
         homeGoals: finished.homeGoals,
         awayGoals: finished.awayGoals,
+        homeIsOwn: finished.homeTeam.isOwn,
       }
     }
+    recentResults = recent.map((m) => ({
+      id: m.id,
+      kickoff: m.kickoff,
+      homeTeam: m.homeTeam,
+      awayTeam: m.awayTeam,
+      homeGoals: m.homeGoals,
+      awayGoals: m.awayGoals,
+    }))
+    upcomingMatches = upcomingList.map((m) => ({
+      id: m.id,
+      kickoff: m.kickoff,
+      status: m.status,
+      homeTeam: m.homeTeam,
+      awayTeam: m.awayTeam,
+      venue: m.venue?.name ?? null,
+      matchday: m.matchday,
+    }))
     if (aueRow) {
       aueStanding = {
         position: aueRow.position,
@@ -132,6 +251,9 @@ export default async function HomePage() {
   } catch (e) {
     console.error('Home data load error', e)
   }
+
+  const countdown = nextMatch ? countdownText(nextMatch.kickoff, now) : null
+  const moreUpcoming = upcomingMatches.filter((m) => m.id !== nextMatch?.id).slice(0, 3)
 
   return (
     <>
@@ -183,7 +305,11 @@ export default async function HomePage() {
 
             <dl className="mx-auto mt-14 grid max-w-5xl grid-cols-1 gap-4 sm:mt-16 sm:grid-cols-3 sm:gap-5">
               <StatCard label="Liga" value={aueStanding?.league ?? 'Regionalliga Nordost'} icon={Trophy} />
-              <StatCard label="Tabellenplatz" value={aueStanding ? `${aueStanding.position}. Platz · ${aueStanding.points} Pkt` : 'Noch keine Daten'} icon={Calendar} />
+              <StatCard
+                label="Tabellenplatz"
+                value={aueStanding ? `${aueStanding.position}. Platz · ${aueStanding.points} Pkt` : 'Noch keine Daten'}
+                icon={Calendar}
+              />
               <StatCard label="Stadion" value="Sparkassen-Erzgebirgsstadion" icon={MapPin} />
             </dl>
           </div>
@@ -194,38 +320,82 @@ export default async function HomePage() {
             <div className="mb-8 flex items-end justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-fc-fg sm:text-3xl">Live-Überblick</h2>
-                <p className="mt-1 text-sm text-fc-fg/65">Nächstes Spiel, letztes Ergebnis und aktuelle Meldungen</p>
+                <p className="mt-1 text-sm text-fc-fg/65">Matchday-Center: Nächstes Spiel, letztes Ergebnis und aktuelle Meldungen</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-              <Card className="border-fc-border/70">
+              <Card className="border-fc-violet/25 bg-gradient-to-b from-fc-violet/[0.08] to-card">
                 <CardHeader className="pb-3">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Calendar className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Nächstes Spiel
+                  <CardTitle className="flex items-center justify-between gap-2 text-lg">
+                    <span className="flex items-center gap-2">
+                      <Calendar className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Nächstes Spiel
+                    </span>
+                    {countdown ? (
+                      <span className="rounded-full border border-fc-violet/25 bg-fc-violet/10 px-2.5 py-1 text-xs font-semibold text-fc-violet-light">
+                        {countdown}
+                      </span>
+                    ) : null}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   {nextMatch ? (
-                    <Link href={`/spiel/${nextMatch.id}`} className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet">
-                      <div className="space-y-2">
-                        <p className="text-lg font-semibold text-fc-fg group-hover:text-fc-violet-light">
+                    <div className="space-y-3">
+                      <Link
+                        href={`/spiel/${nextMatch.id}`}
+                        className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                      >
+                        <div className="flex flex-wrap items-center gap-2">
+                          {nextMatch.matchday ? <Badge variant="outline">{nextMatch.matchday}. Spieltag</Badge> : null}
+                          <Badge variant={nextMatch.status === 'LIVE' ? 'destructive' : 'secondary'}>
+                            {nextMatch.status === 'LIVE' ? 'LIVE' : nextMatch.homeIsOwn ? 'Heim' : 'Auswärts'}
+                          </Badge>
+                        </div>
+                        <p className="mt-2 text-lg font-semibold text-fc-fg group-hover:text-fc-violet-light">
                           {nextMatch.homeTeam} – {nextMatch.awayTeam}
                         </p>
-                        <p className="flex items-center gap-2 text-sm text-fc-fg/70">
+                        <p className="mt-1 flex items-center gap-2 text-sm text-fc-fg/70">
                           <Clock className="h-4 w-4" aria-hidden="true" />
                           {formatDate(nextMatch.kickoff)} · {formatKickoff(nextMatch.kickoff)} Uhr
                         </p>
-                        {nextMatch.venue ? <p className="text-sm text-fc-fg/60">{nextMatch.venue}</p> : null}
-                        <div className="pt-1">
-                          <Badge variant={nextMatch.status === 'LIVE' ? 'destructive' : 'outline'}>
-                            {nextMatch.status === 'LIVE' ? 'LIVE' : nextMatch.homeIsOwn ? 'Heimspiel' : 'Auswärtsspiel'}
-                          </Badge>
-                        </div>
+                        {nextMatch.venue ? <p className="mt-1 text-sm text-fc-fg/60">{nextMatch.venue}</p> : null}
+                      </Link>
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {nextMatch.ticketShopUrl ? (
+                          <a
+                            href={nextMatch.ticketShopUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-1.5 text-xs font-medium text-fc-fg hover:border-fc-violet/40 hover:bg-fc-violet/10"
+                          >
+                            <Ticket className="h-3.5 w-3.5" aria-hidden="true" /> Tickets <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                          </a>
+                        ) : null}
+                        {nextMatch.streams[0] ? (
+                          <a
+                            href={nextMatch.streams[0].url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-1.5 text-xs font-medium text-fc-fg hover:border-fc-violet/40 hover:bg-fc-violet/10"
+                          >
+                            <Tv className="h-3.5 w-3.5" aria-hidden="true" /> Stream <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                          </a>
+                        ) : null}
+                        <Link
+                          href={`/spiel/${nextMatch.id}`}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-fc-violet/25 bg-fc-violet/10 px-3 py-1.5 text-xs font-medium text-fc-violet-light hover:bg-fc-violet/15"
+                        >
+                          Match-Center <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
+                        </Link>
                       </div>
-                    </Link>
+                    </div>
                   ) : (
-                    <p className="text-sm text-fc-fg/60">Kein kommendes Spiel in der Datenbank. <Link href="/spielplan" className="text-fc-violet hover:underline">Zum Spielplan</Link></p>
+                    <p className="text-sm text-fc-fg/60">
+                      Kein kommendes Spiel in der Datenbank.{' '}
+                      <Link href="/spielplan" className="text-fc-violet hover:underline">
+                        Zum Spielplan
+                      </Link>
+                    </p>
                   )}
                 </CardContent>
               </Card>
@@ -238,7 +408,10 @@ export default async function HomePage() {
                 </CardHeader>
                 <CardContent>
                   {lastMatch ? (
-                    <Link href={`/spiel/${lastMatch.id}`} className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet">
+                    <Link
+                      href={`/spiel/${lastMatch.id}`}
+                      className="group block rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                    >
                       <p className="text-lg font-semibold text-fc-fg group-hover:text-fc-violet-light">
                         {lastMatch.homeTeam} – {lastMatch.awayTeam}
                       </p>
@@ -246,17 +419,35 @@ export default async function HomePage() {
                         {lastMatch.homeGoals ?? '-'}:{lastMatch.awayGoals ?? '-'}
                       </p>
                       <p className="mt-1 text-sm text-fc-fg/60">{formatDate(lastMatch.kickoff)}</p>
+                      {(() => {
+                        const res = resultForAue(lastMatch.homeGoals, lastMatch.awayGoals, lastMatch.homeIsOwn)
+                        return res ? (
+                          <span className={cn('mt-2 inline-flex rounded-md border px-2 py-0.5 text-xs font-semibold', res.className)}>
+                            {res.label}
+                          </span>
+                        ) : null
+                      })()}
                     </Link>
                   ) : aueStanding ? (
                     <div>
                       <p className="text-3xl font-bold text-fc-fg">{aueStanding.position}. Platz</p>
-                      <p className="mt-1 text-sm text-fc-fg/70">{aueStanding.points} Punkte nach {aueStanding.played} Spielen</p>
-                      <Link href="/tabelle" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-fc-violet hover:text-fc-violet-light">
+                      <p className="mt-1 text-sm text-fc-fg/70">
+                        {aueStanding.points} Punkte nach {aueStanding.played} Spielen
+                      </p>
+                      <Link
+                        href="/tabelle"
+                        className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-fc-violet hover:text-fc-violet-light"
+                      >
                         Zur Tabelle <ArrowRight className="h-4 w-4" aria-hidden="true" />
                       </Link>
                     </div>
                   ) : (
-                    <p className="text-sm text-fc-fg/60">Noch keine Ergebnisse verfügbar. <Link href="/tabelle" className="text-fc-violet hover:underline">Tabelle ansehen</Link></p>
+                    <p className="text-sm text-fc-fg/60">
+                      Noch keine Ergebnisse verfügbar.{' '}
+                      <Link href="/tabelle" className="text-fc-violet hover:underline">
+                        Tabelle ansehen
+                      </Link>
+                    </p>
                   )}
                 </CardContent>
               </Card>
@@ -272,7 +463,12 @@ export default async function HomePage() {
                     <ul className="space-y-3">
                       {latestNews.map((n) => (
                         <li key={n.id} className="border-b border-fc-border/60 pb-3 last:border-0 last:pb-0">
-                          <a href={n.externalUrl} target="_blank" rel="noopener noreferrer" className="group block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet">
+                          <a
+                            href={n.externalUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group block rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                          >
                             <p className="line-clamp-2 text-sm font-medium text-fc-fg group-hover:text-fc-violet-light">{n.title}</p>
                             <p className="mt-1 text-xs text-fc-fg/55">{formatDateTime(n.publishedAt)}</p>
                           </a>
@@ -280,14 +476,140 @@ export default async function HomePage() {
                       ))}
                     </ul>
                   ) : (
-                    <p className="text-sm text-fc-fg/60">Noch keine News in der Datenbank. <Link href="/news" className="text-fc-violet hover:underline">News-Bereich öffnen</Link></p>
+                    <p className="text-sm text-fc-fg/60">
+                      Noch keine News in der Datenbank.{' '}
+                      <Link href="/news" className="text-fc-violet hover:underline">
+                        News-Bereich öffnen
+                      </Link>
+                    </p>
                   )}
-                  <Link href="/news" className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-fc-violet hover:text-fc-violet-light">
+                  <Link
+                    href="/news"
+                    className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-fc-violet hover:text-fc-violet-light"
+                  >
                     Alle News <ArrowRight className="h-4 w-4" aria-hidden="true" />
                   </Link>
                 </CardContent>
               </Card>
             </div>
+
+            {(recentResults.length > 0 || moreUpcoming.length > 0) && (
+              <div className="mt-6 grid grid-cols-1 gap-5 lg:grid-cols-2">
+                <Card className="border-fc-border/70">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Activity className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Form & letzte Ergebnisse
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {recentResults.length ? (
+                      <div className="space-y-3">
+                        <div className="flex flex-wrap gap-2" aria-label="Form der letzten Spiele">
+                          {recentResults.slice(0, 5).map((m) => {
+                            const res = resultForAue(m.homeGoals, m.awayGoals, m.homeTeam.isOwn)
+                            if (!res) return null
+                            return (
+                              <Link
+                                key={m.id}
+                                href={`/spiel/${m.id}`}
+                                title={`${teamLabel(m.homeTeam)} ${m.homeGoals}:${m.awayGoals} ${teamLabel(m.awayTeam)}`}
+                                className={cn(
+                                  'inline-flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-bold transition-colors hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet',
+                                  res.className,
+                                )}
+                                aria-label={`${res.label}: ${teamLabel(m.homeTeam)} ${m.homeGoals}:${m.awayGoals} ${teamLabel(m.awayTeam)}`}
+                              >
+                                {res.key === 'W' ? 'S' : res.key}
+                              </Link>
+                            )
+                          })}
+                        </div>
+                        <ul className="space-y-2 pt-1">
+                          {recentResults.slice(0, 3).map((m) => {
+                            const res = resultForAue(m.homeGoals, m.awayGoals, m.homeTeam.isOwn)
+                            return (
+                              <li key={m.id}>
+                                <Link
+                                  href={`/spiel/${m.id}`}
+                                  className="flex items-center justify-between gap-3 rounded-lg border border-fc-border/60 bg-fc-bg/20 px-3 py-2 text-sm transition-colors hover:border-fc-violet/35 hover:bg-fc-violet/5"
+                                >
+                                  <span className="min-w-0 truncate text-fc-fg">
+                                    {teamLabel(m.homeTeam)} – {teamLabel(m.awayTeam)}
+                                  </span>
+                                  <span className="flex shrink-0 items-center gap-2">
+                                    <span className="font-bold tabular-nums text-fc-fg">
+                                      {m.homeGoals}:{m.awayGoals}
+                                    </span>
+                                    {res ? (
+                                      <span className={cn('rounded border px-1.5 py-0.5 text-[11px] font-semibold', res.className)}>
+                                        {res.key === 'W' ? 'S' : res.key}
+                                      </span>
+                                    ) : null}
+                                  </span>
+                                </Link>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                        <Link
+                          href="/saison"
+                          className="inline-flex items-center gap-1 pt-1 text-sm font-medium text-fc-violet hover:text-fc-violet-light"
+                        >
+                          Zum Saisonverlauf <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                        </Link>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-fc-fg/60">Noch keine abgeschlossenen Ergebnisse.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-fc-border/70">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <Calendar className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Nächste Termine
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {moreUpcoming.length ? (
+                      <ul className="space-y-2">
+                        {moreUpcoming.map((m) => (
+                          <li key={m.id}>
+                            <Link
+                              href={`/spiel/${m.id}`}
+                              className="flex items-center justify-between gap-3 rounded-lg border border-fc-border/60 bg-fc-bg/20 px-3 py-2 text-sm transition-colors hover:border-fc-violet/35 hover:bg-fc-violet/5"
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate font-medium text-fc-fg">
+                                  {teamLabel(m.homeTeam)} – {teamLabel(m.awayTeam)}
+                                </p>
+                                <p className="mt-0.5 text-xs text-fc-fg/60">
+                                  {formatDate(m.kickoff)} · {formatKickoff(m.kickoff)} Uhr
+                                  {m.venue ? ` · ${m.venue}` : ''}
+                                </p>
+                              </div>
+                              <Badge variant="outline" className="shrink-0 text-[11px]">
+                                {m.homeTeam.isOwn ? 'Heim' : 'Auswärts'}
+                              </Badge>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : nextMatch ? (
+                      <p className="text-sm text-fc-fg/60">Keine weiteren Termine geladen. Weitere Spiele findest du im Spielplan.</p>
+                    ) : (
+                      <p className="text-sm text-fc-fg/60">Aktuell keine kommenden Termine vorhanden.</p>
+                    )}
+                    <Link
+                      href="/spielplan"
+                      className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-fc-violet hover:text-fc-violet-light"
+                    >
+                      Alle Termine <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Link>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         </section>
 
@@ -418,7 +740,7 @@ function StatCard({
         'group relative overflow-hidden border-fc-border/70 bg-fc-surface/70 px-5 py-6 text-center backdrop-blur-[1px] sm:py-7',
         'transition-[transform,border-color,box-shadow,background-color] duration-200',
         'hover:-translate-y-0.5 hover:border-fc-violet/45 hover:bg-fc-surface hover:shadow-lg hover:shadow-fc-violet/5',
-        'motion-reduce:transform-none motion-reduce:transition-none'
+        'motion-reduce:transform-none motion-reduce:transition-none',
       )}
     >
       <div
@@ -441,4 +763,3 @@ function StatCard({
     </Card>
   )
 }
-
