@@ -86,7 +86,12 @@ function currentStreak(results: Result[]) {
   return { result: last, count }
 }
 
-export default async function SaisonPage() {
+export default async function SaisonPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ round?: string; venue?: string }>
+}) {
+  const { round = 'all', venue = 'all' } = await searchParams
   let matches: AueMatchRow[] = []
   let leagueName = 'Regionalliga Nordost'
   let seasonLabel: string | null = null
@@ -139,13 +144,29 @@ export default async function SaisonPage() {
     console.error('Saison load error', e)
   }
 
-  const finished = matches.filter(
+  const allFinished = matches.filter(
     (m) => m.status === 'FINISHED' && m.homeGoals !== null && m.awayGoals !== null,
   )
   const upcoming = matches.filter(
     (m) => m.status === 'SCHEDULED' || m.status === 'LIVE' || m.status === 'POSTPONED',
   )
   const nextMatch = upcoming[0] ?? null
+
+  const matchdays = allFinished
+    .map((m) => m.matchday)
+    .filter((d): d is number => typeof d === 'number')
+  const maxMatchday = matchdays.length > 0 ? Math.max(...matchdays) : 0
+  const hinSplit = maxMatchday > 0 ? Math.ceil(maxMatchday / 2) : 17
+
+  const finished = allFinished.filter((m) => {
+    if (venue === 'home' && !m.homeTeam.isOwn) return false
+    if (venue === 'away' && !m.awayTeam.isOwn) return false
+    if (round === 'hin' && m.matchday !== null && m.matchday > hinSplit) return false
+    if (round === 'rueck' && m.matchday !== null && m.matchday <= hinSplit) return false
+    if (round === 'hin' && m.matchday === null) return false
+    if (round === 'rueck' && m.matchday === null) return false
+    return true
+  })
 
   const progression = finished.map((m, idx) => {
     const aueIsHome = m.homeTeam.isOwn
@@ -224,6 +245,29 @@ export default async function SaisonPage() {
 
   const recent = progressionWithTotals.slice(-5).reverse()
 
+  const roundFilters = [
+    { value: 'all', label: 'Gesamte Saison' },
+    { value: 'hin', label: 'Hinrunde' },
+    { value: 'rueck', label: 'Rückrunde' },
+  ] as const
+  const venueFilters = [
+    { value: 'all', label: 'Heim & Auswärts' },
+    { value: 'home', label: 'Nur Heim' },
+    { value: 'away', label: 'Nur Auswärts' },
+  ] as const
+
+  function buildHref(next: { round?: string; venue?: string }) {
+    const params = new URLSearchParams()
+    const r = next.round ?? round
+    const v = next.venue ?? venue
+    if (r && r !== 'all') params.set('round', r)
+    if (v && v !== 'all') params.set('venue', v)
+    const qs = params.toString()
+    return qs ? `/saison?${qs}` : '/saison'
+  }
+
+  const hasActiveFilter = round !== 'all' || venue !== 'all'
+
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -243,7 +287,7 @@ export default async function SaisonPage() {
             <AlertCircle className="h-5 w-5 shrink-0" aria-hidden="true" />
             <p className="text-sm font-medium">{error}</p>
           </div>
-        ) : played === 0 && upcoming.length === 0 ? (
+        ) : played === 0 && upcoming.length === 0 && !hasActiveFilter ? (
           <div className="flex flex-col items-center justify-center gap-3 rounded-xl border border-fc-border/70 bg-fc-surface/40 py-16 text-center text-fc-fg/70">
             <SearchX className="h-10 w-10 text-fc-fg/40" aria-hidden="true" />
             <p className="text-base font-medium text-fc-fg">Keine Spieldaten vorhanden</p>
@@ -253,6 +297,80 @@ export default async function SaisonPage() {
           </div>
         ) : (
           <div className="space-y-6">
+            <div className="rounded-xl border border-fc-border/70 bg-fc-surface/50 p-4 sm:p-5">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="grid flex-1 gap-4 sm:grid-cols-2">
+                  <div className="flex min-w-0 flex-col gap-1.5">
+                    <span className="text-sm font-medium text-fc-fg/80">Saisonabschnitt</span>
+                    <div className="flex flex-wrap gap-2" role="group" aria-label="Saisonabschnitt filtern">
+                      {roundFilters.map((f) => {
+                        const active = round === f.value
+                        return (
+                          <Link
+                            key={f.value}
+                            href={buildHref({ round: f.value })}
+                            className={cn(
+                              'inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg',
+                              active
+                                ? 'bg-fc-violet text-white shadow-sm shadow-fc-violet/20'
+                                : 'border border-fc-border bg-fc-surface text-fc-fg hover:border-fc-violet/35 hover:bg-fc-violet/10',
+                            )}
+                            aria-current={active ? 'page' : undefined}
+                          >
+                            {f.label}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex min-w-0 flex-col gap-1.5">
+                    <span className="text-sm font-medium text-fc-fg/80">Spielort</span>
+                    <div className="flex flex-wrap gap-2" role="group" aria-label="Spielort filtern">
+                      {venueFilters.map((f) => {
+                        const active = venue === f.value
+                        return (
+                          <Link
+                            key={f.value}
+                            href={buildHref({ venue: f.value })}
+                            className={cn(
+                              'inline-flex h-11 items-center rounded-lg px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg',
+                              active
+                                ? 'bg-fc-violet text-white shadow-sm shadow-fc-violet/20'
+                                : 'border border-fc-border bg-fc-surface text-fc-fg hover:border-fc-violet/35 hover:bg-fc-violet/10',
+                            )}
+                            aria-current={active ? 'page' : undefined}
+                          >
+                            {f.label}
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-sm text-fc-fg/70">
+                  <span className="inline-flex items-center gap-2 rounded-lg border border-fc-border/70 bg-fc-bg/30 px-3 py-2">
+                    <Goal className="h-4 w-4" aria-hidden="true" />
+                    <span className="font-medium text-fc-fg">{played}</span>
+                    <span>{played === 1 ? 'Spiel ausgewertet' : 'Spiele ausgewertet'}</span>
+                  </span>
+                  {hasActiveFilter ? (
+                    <Link
+                      href="/saison"
+                      className="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium text-fc-fg/70 hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                    >
+                      Filter zurücksetzen
+                    </Link>
+                  ) : null}
+                </div>
+              </div>
+              {hasActiveFilter && played === 0 ? (
+                <div className="mt-4 flex items-center gap-3 rounded-lg border border-fc-border/70 bg-fc-bg/30 p-3 text-sm text-fc-fg/70">
+                  <SearchX className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <p>Für die gewählte Filterkombination liegen keine abgeschlossenen Spiele vor. Statistik und Verlauf beziehen sich auf die aktuelle Auswahl.</p>
+                </div>
+              ) : null}
+            </div>
+
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
               <Card className="border-fc-border/70">
                 <CardContent className="p-4">
