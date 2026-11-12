@@ -457,6 +457,13 @@ export default async function SaisonPage() {
                     </p>
                   )}
                   <div className="mt-4 flex flex-wrap gap-3 text-sm">
+                    <a
+                      href="/api/v1/calendar/aue.ics"
+                      className="inline-flex items-center gap-1 font-medium text-fc-violet hover:text-fc-violet-light"
+                      download
+                    >
+                      Kalender (.ics) <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </a>
                     <Link
                       href="/spielplan"
                       className="inline-flex items-center gap-1 font-medium text-fc-violet hover:text-fc-violet-light"

@@ -3,7 +3,7 @@ import { prisma } from '@kumpelapp/db'
 import { formatDate, formatKickoff, formatMatchDay } from '@kumpelapp/utils'
 import { Card, CardContent } from '@kumpelapp/ui'
 import { Badge } from '@kumpelapp/ui'
-import { Calendar, Clock, MapPin, Trophy, AlertCircle, CheckCircle, SearchX } from 'lucide-react'
+import { Calendar, CalendarPlus, Clock, MapPin, Trophy, AlertCircle, CheckCircle, SearchX } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@kumpelapp/utils'
 
@@ -311,9 +311,21 @@ export default async function SpielplanPage({
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">Spielplan</h1>
-          <p className="mt-2 text-fc-fg/70">Alle Spiele der aktuellen Saison – Regionalliga Nordost</p>
+        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">Spielplan</h1>
+            <p className="mt-2 text-fc-fg/70">Alle Spiele der aktuellen Saison – Regionalliga Nordost</p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <a
+              href="/api/v1/calendar/aue.ics"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-fc-violet/30 bg-fc-violet/10 px-4 text-sm font-medium text-fc-fg transition-colors hover:border-fc-violet/45 hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+              download
+            >
+              <CalendarPlus className="h-4 w-4" aria-hidden="true" />
+              Termine als Kalender (.ics)
+            </a>
+          </div>
         </div>
 
         <div className="mb-6 space-y-4">
