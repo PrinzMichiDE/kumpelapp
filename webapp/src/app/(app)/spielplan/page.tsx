@@ -315,6 +315,7 @@ export default async function SpielplanPage({
           <div>
             <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">Spielplan</h1>
             <p className="mt-2 text-fc-fg/70">Alle Spiele der aktuellen Saison – Regionalliga Nordost</p>
+            <p className="mt-1 text-xs text-fc-fg/50">Datenstand je Spiel: siehe Detailseite/Quelle (z. B. OpenLigaDB). Änderungen möglich.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <a
@@ -394,6 +395,12 @@ export default async function SpielplanPage({
                   <span className="text-fc-fg/55">in Auswahl</span>
                 </span>
               ) : null}
+              <span className="inline-flex items-center gap-2 rounded-lg border border-fc-border/70 bg-fc-surface/40 px-3 py-2 text-xs text-fc-fg/60">
+                Stand: {new Date().toLocaleString('de-DE')}
+                <Link href="/quellen" className="font-medium text-fc-violet hover:text-fc-violet-light underline-offset-2 hover:underline">
+                  Quellen
+                </Link>
+              </span>
             </div>
           </div>
         </div>
