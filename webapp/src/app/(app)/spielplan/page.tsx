@@ -134,6 +134,11 @@ function MatchCard({ match }: MatchCardProps) {
               </div>
             </div>
           </div>
+          {match.source ? (
+            <p className="mt-3 border-t border-fc-border/60 pt-2 text-xs text-fc-fg/50">
+              Quelle: <span className="text-fc-fg/65">{match.source}</span>
+            </p>
+          ) : null}
         </CardContent>
       </Card>
     </Link>
