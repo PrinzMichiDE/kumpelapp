@@ -90,7 +90,7 @@ export function FansExplorer({
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-fc-fg/55 hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-fc-fg/55 transition-colors hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
                 aria-label="Suche zurücksetzen"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
@@ -106,7 +106,7 @@ export function FansExplorer({
               type="button"
               onClick={() => setTab(t.key)}
               className={[
-                'inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet',
+                'inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface',
                 tab === t.key ? 'bg-fc-violet text-white' : 'border border-fc-border bg-fc-bg/40 text-fc-fg/80 hover:bg-fc-violet/10',
               ].join(' ')}
               aria-pressed={tab === t.key}
@@ -143,7 +143,7 @@ export function FansExplorer({
                           {fc.isOfficial ? <span className="rounded-full bg-fc-violet/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-fc-violet">Offiziell</span> : null}
                         </div>
                         <p className="mt-1 inline-flex items-center gap-1.5 text-sm text-fc-fg/65"><MapPin className="h-3.5 w-3.5" aria-hidden="true" />{fc.city || 'Ort unbekannt'}</p>
-                        {fc.contactUrl ? <a href={fc.contactUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-fc-violet hover:text-fc-violet-light"><ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />Kontakt</a> : null}
+                        {fc.contactUrl ? <a href={fc.contactUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 rounded text-sm font-medium text-fc-violet transition-colors hover:text-fc-violet-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"><ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />Kontakt</a> : null}
                       </li>
                     ))}
                   </ul>
@@ -160,9 +160,9 @@ export function FansExplorer({
                       <li key={c.id} className="rounded-lg border border-fc-border/60 bg-fc-bg/30 p-3">
                         <p className="font-medium text-fc-fg">{c.role}{c.name ? ` – ${c.name}` : ''}</p>
                         <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-fc-fg/65">
-                          {c.email ? <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 hover:text-fc-violet"><Mail className="h-3.5 w-3.5" aria-hidden="true" />{c.email}</a> : null}
-                          {c.phone ? <a href={`tel:${c.phone}`} className="inline-flex items-center gap-1 hover:text-fc-violet"><Phone className="h-3.5 w-3.5" aria-hidden="true" />{c.phone}</a> : null}
-                          {c.url ? <a href={c.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-fc-violet"><Globe className="h-3.5 w-3.5" aria-hidden="true" />Website</a> : null}
+                          {c.email ? <a href={`mailto:${c.email}`} className="inline-flex items-center gap-1 rounded transition-colors hover:text-fc-violet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"><Mail className="h-3.5 w-3.5" aria-hidden="true" />{c.email}</a> : null}
+                          {c.phone ? <a href={`tel:${c.phone}`} className="inline-flex items-center gap-1 rounded transition-colors hover:text-fc-violet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"><Phone className="h-3.5 w-3.5" aria-hidden="true" />{c.phone}</a> : null}
+                          {c.url ? <a href={c.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded transition-colors hover:text-fc-violet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"><Globe className="h-3.5 w-3.5" aria-hidden="true" />Website</a> : null}
                         </div>
                       </li>
                     ))}
@@ -180,7 +180,7 @@ export function FansExplorer({
                       <li key={d.id} className="rounded-lg border border-fc-border/60 bg-fc-bg/30 p-3">
                         <p className="font-medium text-fc-fg">{d.name}</p>
                         {d.description ? <p className="mt-1 text-sm text-fc-fg/65">{d.description}</p> : null}
-                        {d.contactUrl ? <a href={d.contactUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-fc-violet hover:text-fc-violet-light"><ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />Mehr Infos</a> : null}
+                        {d.contactUrl ? <a href={d.contactUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 rounded text-sm font-medium text-fc-violet transition-colors hover:text-fc-violet-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"><ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />Mehr Infos</a> : null}
                       </li>
                     ))}
                   </ul>
@@ -195,7 +195,7 @@ export function FansExplorer({
                   <ul className="space-y-2">
                     {filtered.links.slice(0, 8).map((l) => (
                       <li key={l.id} className="rounded-lg border border-fc-border/60 bg-fc-bg/30 p-3">
-                        <a href={l.url} target="_blank" rel="noopener noreferrer" className="font-medium text-fc-fg hover:text-fc-violet inline-flex items-center gap-1">
+                        <a href={l.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded font-medium text-fc-fg transition-colors hover:text-fc-violet focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg">
                           {l.label} <ExternalLink className="h-3.5 w-3.5 text-fc-fg/45" aria-hidden="true" />
                         </a>
                         <p className="mt-1 text-sm text-fc-fg/65">{l.description || l.category}</p>
