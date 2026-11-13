@@ -17,6 +17,7 @@ import {
 } from '@kumpelapp/ui'
 
 const navigation = [
+  { name: 'Stadionmodus', href: '/stadionmodus' },
   { name: 'Spieltag', href: '/spielplan' },
   { name: 'Tabelle', href: '/tabelle' },
   { name: 'Saison', href: '/saison' },
@@ -84,13 +85,13 @@ export function Header() {
               className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-fc-surface/95 to-transparent supports-[backdrop-filter]:from-fc-surface/80"
             />
             <ul
-              className="flex items-center gap-1 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+              className="flex snap-x snap-mandatory items-center gap-1 overflow-x-auto overscroll-x-contain scroll-smooth px-1 py-1 [scrollbar-width:thin] [scrollbar-color:color-mix(in_srgb,var(--color-fc-violet)_35%,transparent)_transparent] [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-fc-violet/30 hover:[&::-webkit-scrollbar-thumb]:bg-fc-violet/45 focus-within:[&::-webkit-scrollbar-thumb]:bg-fc-violet/45 motion-reduce:scroll-auto"
               aria-label="Hauptbereiche"
             >
               {navigation.map((item) => {
                 const active = isActivePath(pathname, item.href)
                 return (
-                  <li key={item.name} className="shrink-0">
+                  <li key={item.name} className="shrink-0 snap-start">
                     <Link
                       href={item.href}
                       className={cn(
