@@ -86,14 +86,15 @@ function StandingRow({ standing, index, isAue }: StandingRowProps) {
             lastFive.map((result, i) => (
               <span
                 key={`${standing.id}-form-${i}`}
-                className="flex h-6 w-6 items-center justify-center rounded-md bg-fc-bg/30"
+                className="flex h-6 w-6 items-center justify-center rounded-md bg-fc-bg/30 ring-1 ring-inset ring-fc-border/20"
                 title={formLabel(result)}
               >
                 {getFormIcon(result)}
+                <span className="sr-only">{formLabel(result)}</span>
               </span>
             ))
           ) : (
-            <span className="text-xs text-fc-fg/40">–</span>
+            <span className="text-xs text-fc-fg/40" aria-label="Keine Formdaten">–</span>
           )}
         </div>
       </td>
@@ -191,9 +192,10 @@ export default async function TabellePage() {
             {leagueName}
             {seasonLabel ? ` ${seasonLabel}` : ''}
           </p>
-          {updatedAt ? (
-            <p className="mt-1 text-xs text-fc-fg/50">Stand: {new Date(updatedAt).toLocaleString('de-DE')}</p>
-          ) : null}
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fc-fg/55">
+            {updatedAt ? <p>Stand: {new Date(updatedAt).toLocaleString('de-DE')}</p> : null}
+            <p>Quelle: OpenLigaDB (rlno), mit manuellen Korrekturen möglich</p>
+          </div>
         </div>
 
         {error ? (
