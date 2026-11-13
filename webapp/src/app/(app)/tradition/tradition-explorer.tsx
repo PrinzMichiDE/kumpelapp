@@ -104,7 +104,7 @@ export function TraditionExplorer({
                       <button
                         type="button"
                         onClick={() => setRecordQuery('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-fc-fg/55 hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-fc-fg/55 transition-colors hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
                         aria-label="Suche zurücksetzen"
                       >
                         <X className="h-4 w-4" aria-hidden="true" />
@@ -119,7 +119,7 @@ export function TraditionExplorer({
                     <select
                       value={tier === 'all' ? 'all' : String(tier)}
                       onChange={(e) => setTier(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                      className="h-11 rounded-lg border border-fc-border bg-fc-bg/40 px-3 text-sm text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                      className="h-11 rounded-lg border border-fc-border bg-fc-bg/40 px-3 text-sm text-fc-fg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
                       aria-label="Ligaebene filtern"
                     >
                       <option value="all">Alle Ebenen</option>
@@ -135,7 +135,7 @@ export function TraditionExplorer({
                         setRecordQuery('')
                         setTier('all')
                       }}
-                      className="inline-flex h-11 items-center rounded-lg px-3 text-sm font-medium text-fc-fg/70 hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                      className="inline-flex h-11 items-center rounded-lg px-3 text-sm font-medium text-fc-fg/70 transition-colors hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
                     >
                       Zurücksetzen
                     </button>
@@ -220,7 +220,7 @@ export function TraditionExplorer({
                   <button
                     type="button"
                     onClick={() => setTimelineQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-fc-fg/55 hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-fc-fg/55 transition-colors hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
                     aria-label="Suche zurücksetzen"
                   >
                     <X className="h-4 w-4" aria-hidden="true" />
@@ -234,7 +234,7 @@ export function TraditionExplorer({
                   type="button"
                   onClick={() => setDecade('all')}
                   className={cn(
-                    'rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet',
+                    'inline-flex h-10 items-center rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface',
                     decade === 'all' ? 'bg-fc-violet text-white' : 'border border-fc-border bg-fc-bg/40 text-fc-fg/80 hover:bg-fc-violet/10',
                   )}
                   aria-pressed={decade === 'all'}
@@ -247,7 +247,7 @@ export function TraditionExplorer({
                     type="button"
                     onClick={() => setDecade(d)}
                     className={cn(
-                      'rounded-lg px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet',
+                      'inline-flex h-10 items-center rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface',
                       decade === d ? 'bg-fc-violet text-white' : 'border border-fc-border bg-fc-bg/40 text-fc-fg/80 hover:bg-fc-violet/10',
                     )}
                     aria-pressed={decade === d}
@@ -263,7 +263,7 @@ export function TraditionExplorer({
                     setTimelineQuery('')
                     setDecade('all')
                   }}
-                  className="inline-flex h-10 items-center rounded-lg px-3 text-sm font-medium text-fc-fg/70 hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                  className="inline-flex h-10 items-center rounded-lg px-3 text-sm font-medium text-fc-fg/70 transition-colors hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
                 >
                   Zurücksetzen
                 </button>
