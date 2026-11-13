@@ -78,7 +78,7 @@ export default async function NewsPage({
                 ? 'bg-fc-violet text-white shadow-sm'
                 : 'border border-fc-border bg-fc-surface text-fc-fg hover:border-fc-violet/35 hover:bg-fc-violet/10'
             )}
-            aria-current={!source ? 'page' : undefined}
+            aria-current={!source ? 'true' : undefined}
           >
             Alle
           </Link>
@@ -95,7 +95,7 @@ export default async function NewsPage({
                     ? 'bg-fc-violet text-white shadow-sm'
                     : 'border border-fc-border bg-fc-surface text-fc-fg hover:border-fc-violet/35 hover:bg-fc-violet/10'
                 )}
-                aria-current={active ? 'page' : undefined}
+                aria-current={active ? 'true' : undefined}
               >
                 {meta.label}
               </Link>
