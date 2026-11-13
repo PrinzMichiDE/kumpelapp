@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Circle, Eye, EyeOff, Loader2, Lock, Mail, User } from 'lucide-react'
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input } from '@kumpelapp/ui'
 
 export default function RegisterPage() {
@@ -188,11 +188,11 @@ export default function RegisterPage() {
                 <p className="mb-2 text-xs font-medium uppercase tracking-wide text-fc-fg/55">Passwort-Anforderungen</p>
                 <ul className="grid gap-1.5 sm:grid-cols-2" aria-label="Passwort-Anforderungen">
                   {passwordChecks.map((item) => (
-                    <li key={item.label} className="flex items-center gap-2 text-sm">
+                    <li key={item.label} className="flex items-center gap-2 text-sm transition-colors duration-150">
                       {item.ok ? (
                         <CheckCircle2 className="h-4 w-4 shrink-0 text-fc-win" aria-hidden="true" />
                       ) : (
-                        <span className="h-4 w-4 shrink-0 rounded-full border border-fc-border/80" aria-hidden="true" />
+                        <Circle className="h-4 w-4 shrink-0 text-fc-fg/35" aria-hidden="true" />
                       )}
                       <span className={item.ok ? 'text-fc-fg/85' : 'text-fc-fg/60'}>{item.label}</span>
                     </li>
