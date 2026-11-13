@@ -133,7 +133,7 @@ export function KaderExplorer({ players }: { players: PlayerDto[] }) {
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-fc-fg/55 hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-fc-fg/55 transition-colors hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
                   aria-label="Suche zurücksetzen"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
@@ -148,7 +148,7 @@ export function KaderExplorer({ players }: { players: PlayerDto[] }) {
                 type="button"
                 onClick={() => setLegendsOnly((v) => !v)}
                 className={cn(
-                  'inline-flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet',
+                  'inline-flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface',
                   legendsOnly
                     ? 'border-amber-400/35 bg-amber-500/15 text-amber-100'
                     : 'border-fc-border bg-fc-bg/40 text-fc-fg/80 hover:border-fc-violet/35 hover:bg-fc-violet/10'
@@ -167,7 +167,7 @@ export function KaderExplorer({ players }: { players: PlayerDto[] }) {
                   setPosition('all')
                   setLegendsOnly(false)
                 }}
-                className="inline-flex h-11 items-center rounded-lg px-3 text-sm font-medium text-fc-fg/70 hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                className="inline-flex h-11 items-center rounded-lg px-3 text-sm font-medium text-fc-fg/70 transition-colors hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
               >
                 Filter zurücksetzen
               </button>
@@ -180,7 +180,7 @@ export function KaderExplorer({ players }: { players: PlayerDto[] }) {
             type="button"
             onClick={() => setPosition('all')}
             className={cn(
-              'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet',
+              'inline-flex h-10 items-center rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface',
               position === 'all' ? 'bg-fc-violet text-white' : 'border border-fc-border bg-fc-bg/40 text-fc-fg/80 hover:bg-fc-violet/10',
             )}
             aria-pressed={position === 'all'}
@@ -197,7 +197,7 @@ export function KaderExplorer({ players }: { players: PlayerDto[] }) {
                 type="button"
                 onClick={() => setPosition(pos)}
                 className={cn(
-                  'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet',
+                  'inline-flex h-10 items-center gap-1.5 rounded-lg px-3 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface',
                   position === pos ? 'bg-fc-violet text-white' : 'border border-fc-border bg-fc-bg/40 text-fc-fg/80 hover:bg-fc-violet/10',
                 )}
                 aria-pressed={position === pos}
