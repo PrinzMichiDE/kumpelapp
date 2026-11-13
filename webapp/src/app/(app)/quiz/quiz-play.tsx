@@ -250,7 +250,7 @@ export function QuizPlay() {
             type="button"
             onClick={() => setCategory('all')}
             className={cn(
-              'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet',
+              'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg',
               category === 'all' ? 'bg-fc-violet text-white' : 'border border-fc-border bg-fc-surface text-fc-fg/80 hover:bg-fc-violet/10',
             )}
             aria-pressed={category === 'all'}
@@ -263,7 +263,7 @@ export function QuizPlay() {
               type="button"
               onClick={() => setCategory(c)}
               className={cn(
-                'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet',
+                'rounded-lg px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg',
                 category === c ? 'bg-fc-violet text-white' : 'border border-fc-border bg-fc-surface text-fc-fg/80 hover:bg-fc-violet/10',
               )}
               aria-pressed={category === c}
