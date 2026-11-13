@@ -299,6 +299,7 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                   <Clock className="h-4 w-4" aria-hidden="true" />
                   {formatKickoff(match.kickoff)} Uhr
                 </span>
+                {match.source ? <span className="text-xs text-fc-fg/55">Quelle: {match.source}</span> : null}
               </div>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fc-fg/60">
@@ -414,7 +415,7 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                   href={mapsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg hover:border-fc-violet/40 hover:bg-fc-violet/10"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg transition-[border-color,background-color,color,box-shadow] duration-200 hover:border-fc-violet/40 hover:bg-fc-violet/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
                 >
                   <Navigation className="h-4 w-4" aria-hidden="true" /> Route & Karte <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 </a>
@@ -424,7 +425,7 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                   href={match.ticketSale.shopUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg hover:border-fc-violet/40 hover:bg-fc-violet/10"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg transition-[border-color,background-color,color,box-shadow] duration-200 hover:border-fc-violet/40 hover:bg-fc-violet/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
                 >
                   <Ticket className="h-4 w-4" aria-hidden="true" /> Tickets <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 </a>
@@ -434,7 +435,7 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                   href={match.streams[0].url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg hover:border-fc-violet/40 hover:bg-fc-violet/10"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg transition-[border-color,background-color,color,box-shadow] duration-200 hover:border-fc-violet/40 hover:bg-fc-violet/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
                 >
                   <Tv className="h-4 w-4" aria-hidden="true" /> Stream öffnen <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                 </a>
@@ -442,13 +443,13 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
               <a
                 href="/api/v1/calendar/aue.ics"
                 download
-                className="inline-flex items-center gap-1.5 rounded-lg border border-fc-violet/25 bg-fc-violet/10 px-3 py-2 text-sm font-medium text-fc-violet-light hover:bg-fc-violet/15"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-fc-violet/25 bg-fc-violet/10 px-3 py-2 text-sm font-medium text-fc-violet-light transition-[border-color,background-color,color,box-shadow] duration-200 hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
               >
                 <CalendarPlus className="h-4 w-4" aria-hidden="true" /> Alle Termine (.ics)
               </a>
               <Link
                 href="/spielplan"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg hover:border-fc-violet/40 hover:bg-fc-violet/10"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg transition-[border-color,background-color,color,box-shadow] duration-200 hover:border-fc-violet/40 hover:bg-fc-violet/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
               >
                 <Calendar className="h-4 w-4" aria-hidden="true" /> Zum Spielplan
               </Link>
@@ -629,6 +630,7 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Tv className="h-5 w-5" aria-hidden="true" /> Übertragung
               </CardTitle>
+              <p className="text-sm text-fc-fg/60">Links zu externen Angeboten; Verfügbarkeit kann sich kurzfristig ändern.</p>
             </CardHeader>
             <CardContent>
               <ul className="space-y-2">
@@ -651,6 +653,15 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
             </CardContent>
           </Card>
         ) : null}
+        <Card className="mt-6 border-fc-border/70">
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm text-fc-fg/65">
+            <p>Daten können sich ändern. Quelle/Stand: {match.source || 'unbekannt'}.</p>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/quellen" className="text-fc-violet hover:underline">Quellen</Link>
+              <Link href="/profil/einstellungen" className="text-fc-violet hover:underline">Problem melden / Feedback</Link>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
