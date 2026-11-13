@@ -4,13 +4,14 @@ import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { AlertCircle, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Loader2, Lock, Mail } from 'lucide-react'
 import { Button, Input } from '@kumpelapp/ui'
 
 export function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get('callbackUrl') || '/'
+  const registered = searchParams.get('registered') === 'true'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -45,7 +46,17 @@ export function LoginForm() {
 
   return (
     <div className="space-y-6">
-      <div aria-live="polite" aria-atomic="true" className="min-h-0">
+      <div aria-live="polite" aria-atomic="true" className="space-y-3">
+        {registered && !error ? (
+          <div
+            id="login-success"
+            className="flex items-start gap-3 rounded-xl border border-fc-win/25 bg-fc-win/10 p-3.5 text-sm text-fc-win"
+            role="status"
+          >
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <p>Konto erfolgreich erstellt. Du kannst dich jetzt anmelden.</p>
+          </div>
+        ) : null}
         {error ? (
           <div
             id="login-error"
