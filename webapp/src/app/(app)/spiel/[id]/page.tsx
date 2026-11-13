@@ -2,12 +2,45 @@ import type { MatchDto } from '@kumpelapp/api-contracts'
 import { prisma } from '@kumpelapp/db'
 import { formatDate, formatKickoff, formatMatchDay } from '@kumpelapp/utils'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
-import { AlertCircle, ArrowLeft, Calendar, Car, CheckCircle, Clock, ExternalLink, MapPin, Ticket, Train, Trophy, Tv } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowLeft,
+  Calendar,
+  CalendarPlus,
+  Car,
+  CheckCircle,
+  Clock,
+  ExternalLink,
+  Info,
+  MapPin,
+  Navigation,
+  Ticket,
+  Train,
+  Trophy,
+  Tv,
+} from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cn } from '@kumpelapp/utils'
 
 export const dynamic = 'force-dynamic'
+
+function countdownText(kickoffIso: string, now: Date) {
+  const kickoff = new Date(kickoffIso)
+  const diffMs = kickoff.getTime() - now.getTime()
+  if (diffMs <= 0) return null
+  const totalMinutes = Math.floor(diffMs / 60000)
+  const days = Math.floor(totalMinutes / (60 * 24))
+  const hours = Math.floor((totalMinutes % (60 * 24)) / 60)
+  const minutes = totalMinutes % 60
+  if (days > 0) return `Anstoß in ${days} ${days === 1 ? 'Tag' : 'Tagen'}${hours > 0 ? `, ${hours} Std.` : ''}`
+  if (hours > 0) return `Anstoß in ${hours} Std.${minutes > 0 ? ` ${minutes} Min.` : ''}`
+  return `Anstoß in ${minutes} Min.`
+}
+
+function mapsSearchUrl(query: string) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`
+}
 
 function toDto(m: {
   id: string
@@ -209,6 +242,24 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
     { goals: 0, yellows: 0, reds: 0, subs: 0 },
   )
 
+  const now = new Date()
+  const countdown = countdownText(match.kickoff, now)
+  const opponentName = match.homeTeam.isOwn
+    ? match.awayTeam.shortName || match.awayTeam.name
+    : match.homeTeam.shortName || match.homeTeam.name
+  const venueQuery = match.venue ? `${match.venue.name}, ${match.venue.city}` : null
+  const mapsUrl = venueQuery ? mapsSearchUrl(venueQuery) : null
+  const statusLabel =
+    match.status === 'LIVE'
+      ? 'Läuft gerade'
+      : match.status === 'FINISHED'
+        ? 'Spiel beendet'
+        : match.status === 'POSTPONED'
+          ? 'Spiel verlegt'
+          : match.status === 'CANCELLED'
+            ? 'Spiel abgesagt'
+            : 'Anstehend'
+
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
@@ -230,6 +281,9 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                   </Badge>
                 ) : null}
                 {statusBadge(match.status)}
+                <Badge variant={match.homeTeam.isOwn ? 'secondary' : 'outline'}>
+                  {match.homeTeam.isOwn ? 'Heimspiel' : 'Auswärtsspiel'}
+                </Badge>
                 {aueResult ? (
                   <span className={cn('inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold', aueResult.tone)}>
                     Aue: {aueResult.label}
@@ -246,6 +300,11 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                   {formatKickoff(match.kickoff)} Uhr
                 </span>
               </div>
+            </div>
+            <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fc-fg/60">
+              {countdown ? <span className="font-medium text-fc-violet-light">{countdown}</span> : <span>{statusLabel}</span>}
+              <span>Gegner: {opponentName}</span>
+              {match.source ? <span>Quelle: {match.source}</span> : null}
             </div>
           </CardHeader>
           <CardContent className="p-6 sm:p-8">
@@ -307,6 +366,98 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                 <p className="mt-1">{match.editorNote}</p>
               </div>
             ) : null}
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6 border-fc-violet/25 bg-gradient-to-b from-fc-violet/[0.07] to-card">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Info className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Spieltag-Check
+            </CardTitle>
+            <p className="text-sm text-fc-fg/65">
+              Die wichtigsten Infos und Schnellaktionen für dieses Spiel auf einen Blick.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
+                <p className="text-xs uppercase tracking-wide text-fc-fg/55">Status</p>
+                <p className="mt-1 text-sm font-semibold text-fc-fg">{statusLabel}</p>
+                {countdown ? <p className="mt-0.5 text-xs text-fc-fg/60">{countdown}</p> : null}
+              </div>
+              <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
+                <p className="text-xs uppercase tracking-wide text-fc-fg/55">Ort</p>
+                <p className="mt-1 text-sm font-semibold text-fc-fg">{match.homeTeam.isOwn ? 'Heim' : 'Auswärts'}</p>
+                <p className="mt-0.5 text-xs text-fc-fg/60 line-clamp-2">{venueQuery ?? 'Spielort noch offen'}</p>
+              </div>
+              <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
+                <p className="text-xs uppercase tracking-wide text-fc-fg/55">Tickets</p>
+                <p className="mt-1 text-sm font-semibold text-fc-fg">
+                  {match.ticketSale?.shopUrl ? 'Verfügbar/Verlinkt' : 'Kein direkter Link'}
+                </p>
+                {match.ticketSale?.awayContingent ? (
+                  <p className="mt-0.5 text-xs text-fc-fg/60 line-clamp-2">{match.ticketSale.awayContingent}</p>
+                ) : null}
+              </div>
+              <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
+                <p className="text-xs uppercase tracking-wide text-fc-fg/55">Übertragung</p>
+                <p className="mt-1 text-sm font-semibold text-fc-fg">
+                  {match.streams && match.streams.length > 0 ? `${match.streams.length} Link${match.streams.length === 1 ? '' : 's'}` : 'Noch kein Stream hinterlegt'}
+                </p>
+                <p className="mt-0.5 text-xs text-fc-fg/60">Offizielle/kuratierte Hinweise prüfen</p>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {mapsUrl ? (
+                <a
+                  href={mapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg hover:border-fc-violet/40 hover:bg-fc-violet/10"
+                >
+                  <Navigation className="h-4 w-4" aria-hidden="true" /> Route & Karte <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                </a>
+              ) : null}
+              {match.ticketSale?.shopUrl ? (
+                <a
+                  href={match.ticketSale.shopUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg hover:border-fc-violet/40 hover:bg-fc-violet/10"
+                >
+                  <Ticket className="h-4 w-4" aria-hidden="true" /> Tickets <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                </a>
+              ) : null}
+              {match.streams?.[0] ? (
+                <a
+                  href={match.streams[0].url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg hover:border-fc-violet/40 hover:bg-fc-violet/10"
+                >
+                  <Tv className="h-4 w-4" aria-hidden="true" /> Stream öffnen <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                </a>
+              ) : null}
+              <a
+                href="/api/v1/calendar/aue.ics"
+                download
+                className="inline-flex items-center gap-1.5 rounded-lg border border-fc-violet/25 bg-fc-violet/10 px-3 py-2 text-sm font-medium text-fc-violet-light hover:bg-fc-violet/15"
+              >
+                <CalendarPlus className="h-4 w-4" aria-hidden="true" /> Alle Termine (.ics)
+              </a>
+              <Link
+                href="/spielplan"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg hover:border-fc-violet/40 hover:bg-fc-violet/10"
+              >
+                <Calendar className="h-4 w-4" aria-hidden="true" /> Zum Spielplan
+              </Link>
+            </div>
+
+            <p className="text-xs text-fc-fg/55">
+              Hinweis: Angaben zu Tickets, Streams, Anfahrt und Zeiten können sich kurzfristig ändern. Prüfe bei wichtigen Infos die offizielle Quelle des Vereins oder Veranstalters.
+              {match.source ? ` (Datenquelle dieses Spiels: ${match.source})` : ''}
+            </p>
           </CardContent>
         </Card>
 
