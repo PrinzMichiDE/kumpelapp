@@ -352,7 +352,7 @@ export default async function SpielplanPage({
                             ? 'bg-fc-violet text-white shadow-sm shadow-fc-violet/20'
                             : 'border border-fc-border bg-fc-surface text-fc-fg hover:border-fc-violet/35 hover:bg-fc-violet/10'
                         )}
-                        aria-current={active ? 'page' : undefined}
+                        aria-current={active ? 'true' : undefined}
                       >
                         {f.label}
                       </Link>
@@ -376,7 +376,7 @@ export default async function SpielplanPage({
                             ? 'bg-fc-violet text-white shadow-sm shadow-fc-violet/20'
                             : 'border border-fc-border bg-fc-surface text-fc-fg hover:border-fc-violet/35 hover:bg-fc-violet/10'
                         )}
-                        aria-current={active ? 'page' : undefined}
+                        aria-current={active ? 'true' : undefined}
                       >
                         {f.label}
                       </Link>
