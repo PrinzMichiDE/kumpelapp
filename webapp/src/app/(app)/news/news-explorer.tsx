@@ -123,7 +123,7 @@ export function NewsExplorer({ items, activeSource }: { items: NewsItemDto[]; ac
                 <button
                   type="button"
                   onClick={() => setQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-fc-fg/55 hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-fc-fg/55 transition-colors hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
                   aria-label="Suche zurücksetzen"
                 >
                   <X className="h-4 w-4" aria-hidden="true" />
@@ -137,7 +137,7 @@ export function NewsExplorer({ items, activeSource }: { items: NewsItemDto[]; ac
               type="button"
               onClick={() => setOnlyWithImage((v) => !v)}
               className={cn(
-                'inline-flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet',
+                'inline-flex h-11 items-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface',
                 onlyWithImage
                   ? 'border-fc-violet/35 bg-fc-violet/15 text-fc-fg'
                   : 'border-fc-border bg-fc-bg/40 text-fc-fg/80 hover:border-fc-violet/35 hover:bg-fc-violet/10',
@@ -153,7 +153,7 @@ export function NewsExplorer({ items, activeSource }: { items: NewsItemDto[]; ac
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value === 'oldest' ? 'oldest' : 'newest')}
-                className="h-11 rounded-lg border border-fc-border bg-fc-bg/40 px-3 text-sm text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                className="h-11 rounded-lg border border-fc-border bg-fc-bg/40 px-3 text-sm text-fc-fg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
                 aria-label="Sortierung"
               >
                 <option value="newest">Neueste zuerst</option>
@@ -169,7 +169,7 @@ export function NewsExplorer({ items, activeSource }: { items: NewsItemDto[]; ac
                   setOnlyWithImage(false)
                   setSort('newest')
                 }}
-                className="inline-flex h-11 items-center rounded-lg px-3 text-sm font-medium text-fc-fg/70 hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet"
+                className="inline-flex h-11 items-center rounded-lg px-3 text-sm font-medium text-fc-fg/70 transition-colors hover:bg-fc-violet/10 hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
               >
                 Zurücksetzen
               </button>
