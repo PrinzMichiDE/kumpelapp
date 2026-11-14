@@ -3,6 +3,7 @@ import { prisma } from '@kumpelapp/db'
 import { Card, CardContent } from '@kumpelapp/ui'
 import { ArrowRight, Brain, SearchX, Trophy, User, type LucideIcon } from 'lucide-react'
 import { cn } from '@kumpelapp/utils'
+import { TodayInAueHistoryBanner } from '@/components/today-in-aue-history'
 import { TraditionExplorer } from './tradition-explorer'
 
 export const dynamic = 'force-dynamic'
@@ -106,6 +107,8 @@ export default async function TraditionPage() {
           <h1 className="text-3xl font-bold tracking-tight text-fc-fg md:text-4xl">Tradition &amp; Geschichte</h1>
           <p className="mt-2 text-fc-fg/70">80 Jahre FC Erzgebirge Aue – Titel, Legenden, Saisonhistorie &amp; Chronik</p>
         </div>
+
+        <TodayInAueHistoryBanner />
 
         <section className="mb-12" aria-labelledby="titles-heading">
           <SectionHeading id="titles-heading" icon={Trophy} title="Titel & Erfolge" accent="bg-fc-draw/12 text-fc-draw ring-fc-draw/20" />

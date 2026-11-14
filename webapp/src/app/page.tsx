@@ -28,6 +28,7 @@ import { cn, formatDate, formatDateTime, formatKickoff } from '@kumpelapp/utils'
 import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
 import { OfflineBanner } from '@/components/offline-banner'
+import { TodayInAueHistoryCard } from '@/components/today-in-aue-history'
 
 export const dynamic = 'force-dynamic'
 
@@ -37,6 +38,7 @@ export const metadata: Metadata = {
 }
 
 const features = [
+  { name: 'Stadionmodus', href: '/stadionmodus', icon: Activity, description: 'Alles zum nächsten Spieltag auf einen Blick' },
   { name: 'Spieltag', href: '/spielplan', icon: Calendar, description: 'Alle Spiele, Termine & Ergebnisse' },
   { name: 'Tabelle', href: '/tabelle', icon: Trophy, description: 'Aktuelle Regionalliga Nordost Tabelle' },
   { name: 'Saison', href: '/saison', icon: BarChart3, description: 'Ergebnisse, Formkurve & Saisonbilanz' },
@@ -320,11 +322,11 @@ export default async function HomePage() {
             <div className="mb-8 flex items-end justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold text-fc-fg sm:text-3xl">Live-Überblick</h2>
-                <p className="mt-1 text-sm text-fc-fg/65">Matchday-Center: Nächstes Spiel, letztes Ergebnis und aktuelle Meldungen</p>
+                <p className="mt-1 text-sm text-fc-fg/65">Matchday-Center: Nächstes Spiel, Ergebnis, News und ein Blick in die Veilchen-Geschichte</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
               <Card className="border-fc-violet/25 bg-gradient-to-b from-fc-violet/[0.08] to-card">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center justify-between gap-2 text-lg">
@@ -491,6 +493,8 @@ export default async function HomePage() {
                   </Link>
                 </CardContent>
               </Card>
+
+              <TodayInAueHistoryCard compact />
             </div>
 
             {(recentResults.length > 0 || moreUpcoming.length > 0) && (
