@@ -140,3 +140,38 @@ export function TodayInAueHistoryBanner() {
     </section>
   )
 }
+
+export function UpcomingAueMilestones() {
+  const upcoming = getUpcomingDatedEvents(new Date(), 4)
+  if (upcoming.length === 0) return null
+
+  return (
+    <section aria-labelledby="upcoming-milestones-heading" className="mb-12">
+      <div className="flex items-center gap-3 mb-4">
+        <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-fc-violet/12 text-fc-violet ring-1 ring-inset ring-fc-violet/20">
+          <CalendarDays className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <h2 id="upcoming-milestones-heading" className="text-2xl font-bold tracking-tight text-fc-fg">
+          Nächste Gedenktage
+        </h2>
+      </div>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {upcoming.map(({ event, next }) => (
+          <Card key={`${event.year}-${event.month}-${event.day}-${event.title}`} className="border-fc-border/70 transition-[border-color,box-shadow] duration-200 hover:border-fc-violet/35 hover:shadow-md hover:shadow-fc-violet/5">
+            <CardContent className="pt-5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="rounded-full border border-fc-violet/25 bg-fc-violet/10 px-2.5 py-1 text-xs font-semibold text-fc-violet-light">
+                  {String(next.getDate()).padStart(2, '0')}.{String(next.getMonth() + 1).padStart(2, '0')}.
+                </span>
+                <span className="text-xs font-medium text-fc-fg/55">{categoryLabel(event.category)}</span>
+              </div>
+              <p className="mt-3 text-lg font-bold tabular-nums text-fc-violet">{event.year}</p>
+              <p className="mt-1 font-semibold leading-snug text-fc-fg">{event.title}</p>
+              <p className="mt-2 text-sm leading-relaxed text-fc-fg/70 line-clamp-3">{event.description}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </section>
+  )
+}

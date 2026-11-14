@@ -3,7 +3,7 @@ import { prisma } from '@kumpelapp/db'
 import { Card, CardContent } from '@kumpelapp/ui'
 import { ArrowRight, Brain, SearchX, Trophy, User, type LucideIcon } from 'lucide-react'
 import { cn } from '@kumpelapp/utils'
-import { TodayInAueHistoryBanner } from '@/components/today-in-aue-history'
+import { TodayInAueHistoryBanner, UpcomingAueMilestones } from '@/components/today-in-aue-history'
 import { TraditionExplorer } from './tradition-explorer'
 
 export const dynamic = 'force-dynamic'
@@ -109,6 +109,7 @@ export default async function TraditionPage() {
         </div>
 
         <TodayInAueHistoryBanner />
+        <UpcomingAueMilestones />
 
         <section className="mb-12" aria-labelledby="titles-heading">
           <SectionHeading id="titles-heading" icon={Trophy} title="Titel & Erfolge" accent="bg-fc-draw/12 text-fc-draw ring-fc-draw/20" />
