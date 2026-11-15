@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import type { PlayerDto } from '@kumpelapp/api-contracts'
 import { Badge, Card, Input } from '@kumpelapp/ui'
 import { cn } from '@kumpelapp/utils'
-import { Goal, Search, SearchX, Shield, Star, User, X } from 'lucide-react'
+import { Cake, Goal, Search, SearchX, Shield, Star, User, X } from 'lucide-react'
 
 const positionConfig = {
   GOALKEEPER: {
@@ -35,9 +35,25 @@ const positionConfig = {
 
 type PositionKey = keyof typeof positionConfig
 
+function formatBirthInfo(birthDate: string | null) {
+  if (!birthDate) return null
+  const d = new Date(birthDate)
+  if (Number.isNaN(d.getTime())) return null
+  const birth = /^\d{4}-\d{2}-\d{2}/.test(birthDate)
+    ? new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate())
+    : new Date(d.getFullYear(), d.getMonth(), d.getDate())
+  const now = new Date()
+  let age = now.getFullYear() - birth.getFullYear()
+  const m = now.getMonth() - birth.getMonth()
+  if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age -= 1
+  const label = `${String(birth.getDate()).padStart(2, '0')}.${String(birth.getMonth() + 1).padStart(2, '0')}.${birth.getFullYear()}`
+  return age >= 0 && age < 120 ? `${label} (${age})` : label
+}
+
 function PlayerCard({ player }: { player: PlayerDto }) {
   const config = positionConfig[player.position as PositionKey] ?? positionConfig.MIDFIELDER
   const Icon = config.icon
+  const birthInfo = formatBirthInfo(player.birthDate)
 
   return (
     <Card className="group flex flex-col items-center gap-4 p-4 transition-[border-color,box-shadow,transform,background-color] duration-200 hover:-translate-y-0.5 hover:border-fc-violet/40 hover:shadow-lg hover:shadow-fc-violet/5 sm:flex-row sm:items-center">
@@ -79,6 +95,12 @@ function PlayerCard({ player }: { player: PlayerDto }) {
             <span className="inline-flex items-center gap-1 rounded-md bg-fc-bg/35 px-2 py-0.5">
               <User className="h-3 w-3" aria-hidden="true" />
               {player.nationality}
+            </span>
+          ) : null}
+          {birthInfo ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-fc-bg/35 px-2 py-0.5">
+              <Cake className="h-3 w-3" aria-hidden="true" />
+              {birthInfo}
             </span>
           ) : null}
         </div>

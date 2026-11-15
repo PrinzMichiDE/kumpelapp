@@ -1,6 +1,7 @@
 import type { PlayerDto } from '@kumpelapp/api-contracts'
 import { prisma } from '@kumpelapp/db'
 import { AlertCircle, SearchX } from 'lucide-react'
+import { SquadBirthdaysCard } from '@/components/squad-birthdays'
 import { KaderExplorer } from './kader-explorer'
 
 export const dynamic = 'force-dynamic'
@@ -58,6 +59,17 @@ export default async function KaderPage() {
     console.error('Kader load error', e)
   }
 
+  const birthdayPlayers = players
+    .filter((p): p is typeof p & { birthDate: string } => typeof p.birthDate === 'string' && p.birthDate.length > 0)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      number: p.number ?? null,
+      position: p.position ?? null,
+      imageUrl: p.imageUrl ?? null,
+      birthDate: p.birthDate,
+    }))
+
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -87,7 +99,10 @@ export default async function KaderPage() {
             </p>
           </div>
         ) : (
-          <KaderExplorer players={players} />
+          <div className="space-y-8">
+            {birthdayPlayers.length > 0 ? <SquadBirthdaysCard players={birthdayPlayers} /> : null}
+            <KaderExplorer players={players} />
+          </div>
         )}
 
         <aside className="mt-8 rounded-xl border border-fc-border/80 bg-fc-surface/60 p-5 sm:p-6" aria-label="Hinweis zu Kaderdaten">
