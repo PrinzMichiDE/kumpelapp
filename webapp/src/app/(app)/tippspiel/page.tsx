@@ -21,10 +21,29 @@ export default async function TippspielPage({ searchParams }: { searchParams: Pr
   }).catch(() => [])
   const tips = userId ? await prisma.tip.findMany({ where: { userId, matchId: { in: matches.map(m => m.id) } } }).catch(() => []) : []
   const tipByMatch = new Map(tips.map(t => [t.matchId, t]))
-  const leaderboard = await prisma.tip.groupBy({ by: ['userId'], _sum: { points: true }, orderBy: { _sum: { points: 'desc' } }, take: 10 }).catch(() => [])
+  const leaderboard = await prisma.tip.groupBy({ by: ['userId'], _sum: { points: true }, _count: { _all: true }, orderBy: { _sum: { points: 'desc' } }, take: 10 }).catch(() => [] as any[])
   const userIds = leaderboard.map(l => l.userId)
-  const users = userIds.length ? await prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true } }) : []
+  const users = userIds.length ? await prisma.user.findMany({ where: { id: { in: userIds } }, select: { id: true, name: true } }).catch(() => []) : []
   const nameById = new Map(users.map(u => [u.id, u.name || 'Fan']))
+
+  let myStanding: { points: number; scoredTips: number; exactTips: number; rank: number | null; totalScorers: number } | null = null
+  if (userId) {
+    try {
+      const [myAgg, myScored, myExact, allAgg] = await Promise.all([
+        prisma.tip.aggregate({ where: { userId, points: { not: null } }, _sum: { points: true } }),
+        prisma.tip.count({ where: { userId, points: { not: null } } }),
+        prisma.tip.count({ where: { userId, points: 3 } }),
+        prisma.tip.groupBy({ by: ['userId'], where: { points: { not: null } }, _sum: { points: true } }),
+      ])
+      const myPoints = myAgg._sum.points ?? 0
+      const sortedPoints = allAgg.map((a) => a._sum.points ?? 0).sort((a, b) => b - a)
+      const totalScorers = sortedPoints.length
+      const rank = myScored > 0 ? sortedPoints.findIndex((p) => p === myPoints) + 1 : null
+      myStanding = { points: myPoints, scoredTips: myScored, exactTips: myExact, rank: rank && rank > 0 ? rank : null, totalScorers }
+    } catch (e) {
+      console.error('Tippspiel standing load error', e)
+    }
+  }
 
   return (
     <main id="main-content" className="flex-1">
@@ -115,18 +134,41 @@ export default async function TippspielPage({ searchParams }: { searchParams: Pr
             </Card>
           </div>
 
-          <Card className="border-fc-border/70 h-fit">
-            <CardHeader><CardTitle>Rangliste (Top 10)</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              {leaderboard.length === 0 ? <p className="text-fc-fg/70">Noch keine ausgewerteten Tipps.</p> : leaderboard.map((l, i) => (
-                <div key={l.userId} className="flex items-center justify-between rounded-md border border-fc-border/50 px-3 py-2">
-                  <span className="text-fc-fg/80">#{i + 1} {nameById.get(l.userId) || 'Fan'}</span>
-                  <span className="font-semibold text-fc-fg">{l._sum.points ?? 0} P</span>
-                </div>
-              ))}
-              <p className="pt-2 text-xs text-fc-fg/55">Gesamtwertung über ausgewertete Tipps. Gruppenwertungen über Kumpels-Gruppen. Bei Spielverlegung/Abbruch können Tipps/Ergebnisse manuell korrigiert werden.</p>
-            </CardContent>
-          </Card>
+          <div className="space-y-4 lg:sticky lg:top-24 h-fit">
+            {userId && myStanding ? (
+              <Card className="border-fc-violet/25 bg-gradient-to-b from-fc-violet/[0.08] to-card">
+                <CardHeader><CardTitle>Deine Platzierung</CardTitle></CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-fc-fg/55">Rang</p>
+                      <p className="mt-1 text-2xl font-bold tabular-nums text-fc-fg">{myStanding.rank != null ? `#${myStanding.rank}` : '—'}</p>
+                      <p className="text-xs text-fc-fg/55">von {myStanding.totalScorers || '—'} gewerteten Tippern</p>
+                    </div>
+                    <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-fc-fg/55">Punkte</p>
+                      <p className="mt-1 text-2xl font-bold tabular-nums text-fc-fg">{myStanding.points}</p>
+                      <p className="text-xs text-fc-fg/55">{myStanding.scoredTips} ausgewertet · {myStanding.exactTips}× exakt</p>
+                    </div>
+                  </div>
+                  <Link href="/meine-tipps" className="inline-flex text-sm font-medium text-fc-violet hover:text-fc-violet-light hover:underline">Meine Tipps & Verlauf ansehen →</Link>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <Card className="border-fc-border/70">
+              <CardHeader><CardTitle>Rangliste (Top 10)</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                {leaderboard.length === 0 ? <p className="text-fc-fg/70">Noch keine ausgewerteten Tipps.</p> : leaderboard.map((l, i) => (
+                  <div key={l.userId} className={`flex items-center justify-between rounded-md border px-3 py-2 ${userId && l.userId === userId ? 'border-fc-violet/35 bg-fc-violet/10' : 'border-fc-border/50'}`}>
+                    <span className="text-fc-fg/80">#{i + 1} {nameById.get(l.userId) || 'Fan'}{userId && l.userId === userId ? ' (du)' : ''}</span>
+                    <span className="font-semibold text-fc-fg">{l._sum.points ?? 0} P</span>
+                  </div>
+                ))}
+                <p className="pt-2 text-xs text-fc-fg/55">Gesamtwertung über ausgewertete Tipps. Gruppenwertungen über Kumpels-Gruppen. Bei Spielverlegung/Abbruch können Tipps/Ergebnisse manuell korrigiert werden.</p>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </main>
