@@ -6,14 +6,19 @@ import { Badge } from '@kumpelapp/ui'
 import { Calendar, CalendarPlus, Clock, MapPin, Trophy, AlertCircle, CheckCircle, SearchX } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@kumpelapp/utils'
+import { DataMeta } from '@/components/data-meta'
+import { staleLabel } from '@/lib/data-freshness'
+import { getServerSession } from '@/lib/auth-server'
 
 export const dynamic = 'force-dynamic'
 
 interface MatchCardProps {
   match: MatchDto
+  community?: { going: number; maybe: number; total: number } | null
+  myStatus?: 'GOING' | 'MAYBE' | 'NOT_GOING' | null
 }
 
-function MatchCard({ match }: MatchCardProps) {
+function MatchCard({ match, community, myStatus }: MatchCardProps) {
   const isFinished = match.status === 'FINISHED'
   const isLive = match.status === 'LIVE'
   const isAueHome = match.homeTeam.isOwn
@@ -131,6 +136,21 @@ function MatchCard({ match }: MatchCardProps) {
                 <p className={cn('truncate font-medium', !isAueHome ? 'text-fc-fg/70' : 'text-fc-fg')}>
                   {match.awayTeam.shortName || match.awayTeam.name}
                 </p>
+                {(community && community.total > 0) || myStatus ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-fc-fg/65">
+                    {community && community.total > 0 ? (
+                      <span className="inline-flex items-center gap-1 rounded-md border border-fc-border/70 bg-fc-bg/30 px-2 py-0.5">
+                        <span className="font-semibold text-fc-win">{community.going}</span> dabei
+                        {community.maybe > 0 ? <span className="text-fc-fg/55">· {community.maybe} evtl.</span> : null}
+                      </span>
+                    ) : null}
+                    {myStatus ? (
+                      <span className={cn('inline-flex items-center rounded-md border px-2 py-0.5 font-medium', myStatus === 'GOING' ? 'border-fc-win/30 bg-fc-win/10 text-fc-win' : myStatus === 'MAYBE' ? 'border-fc-draw/30 bg-fc-draw/10 text-fc-draw' : 'border-fc-loss/30 bg-fc-loss/10 text-fc-loss')}>
+                        {myStatus === 'GOING' ? 'Du: Dabei' : myStatus === 'MAYBE' ? 'Du: Vielleicht' : 'Du: Nicht dabei'}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -230,6 +250,14 @@ export default async function SpielplanPage({
 
   let matches: MatchDto[] = []
   let error: string | null = null
+  let attendanceByMatch = new Map<string, { going: number; maybe: number; total: number }>()
+  let myAttendanceByMatch = new Map<string, 'GOING' | 'MAYBE' | 'NOT_GOING'>()
+  let syncMeta: { source: string; updatedAt: Date | null; stale: boolean; staleText: string | null; manualLabel?: string | null } = {
+    source: 'OpenLigaDB (rlno) / Redaktion',
+    updatedAt: null,
+    stale: false,
+    staleText: null,
+  }
 
   const timeframeWhere =
     timeframe === 'upcoming'
@@ -246,33 +274,84 @@ export default async function SpielplanPage({
         : {}
 
   try {
-    const rows = await prisma.match.findMany({
-      where: { ...timeframeWhere, ...locationWhere },
-      include: {
-        venue: {
-          select: {
-            id: true,
-            name: true,
-            city: true,
-            lat: true,
-            lng: true,
-            awayBlockInfo: true,
-            travelCar: true,
-            travelTrain: true,
-            parkingInfo: true,
+    const session = await getServerSession()
+    const [rows, syncLog] = await Promise.all([
+      prisma.match.findMany({
+        where: { ...timeframeWhere, ...locationWhere },
+        include: {
+          venue: {
+            select: {
+              id: true,
+              name: true,
+              city: true,
+              lat: true,
+              lng: true,
+              awayBlockInfo: true,
+              travelCar: true,
+              travelTrain: true,
+              parkingInfo: true,
+            },
           },
+          homeTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
+          awayTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
+          events: { orderBy: { minute: 'asc' } },
+          sales: { take: 1, orderBy: { saleStart: 'asc' } },
+          streams: { select: { name: true, url: true, kind: true } },
         },
-        homeTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
-        awayTeam: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
-        events: { orderBy: { minute: 'asc' } },
-        sales: { take: 1, orderBy: { saleStart: 'asc' } },
-        streams: { select: { name: true, url: true, kind: true } },
-      },
-      orderBy: { kickoff: timeframe === 'past' ? 'desc' : 'asc' },
-      take: 100,
-    })
+        orderBy: { kickoff: timeframe === 'past' ? 'desc' : 'asc' },
+        take: 100,
+      }),
+      prisma.sourceSyncLog.findFirst({
+        where: { source: 'openligadb' },
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true, ok: true, message: true },
+      }),
+    ])
 
     matches = rows.map(toDto)
+
+    const matchIds = rows.map((m) => m.id)
+    if (matchIds.length > 0) {
+      try {
+        const [attGroups, myRows] = await Promise.all([
+          prisma.attendance.groupBy({
+            by: ['matchId', 'status'],
+            where: { matchId: { in: matchIds } },
+            _count: { _all: true },
+          }),
+          session?.user?.id
+            ? prisma.attendance.findMany({
+                where: { userId: session.user.id, matchId: { in: matchIds } },
+                select: { matchId: true, status: true },
+              })
+            : Promise.resolve([]),
+        ])
+        for (const g of attGroups) {
+          const prev = attendanceByMatch.get(g.matchId) ?? { going: 0, maybe: 0, total: 0 }
+          const c = g._count._all
+          prev.total += c
+          if (g.status === 'GOING') prev.going += c
+          else if (g.status === 'MAYBE') prev.maybe += c
+          attendanceByMatch.set(g.matchId, prev)
+        }
+        for (const r of myRows) {
+          if (r.status === 'GOING' || r.status === 'MAYBE' || r.status === 'NOT_GOING') {
+            myAttendanceByMatch.set(r.matchId, r.status)
+          }
+        }
+      } catch (e) {
+        console.error('Spielplan attendance load error', e)
+      }
+    }
+    const syncDate = syncLog?.createdAt ?? null
+    const staleText = staleLabel(syncDate, 'openligadb')
+    syncMeta = {
+      source: 'OpenLigaDB (rlno), mit manuellen Korrekturen möglich',
+      updatedAt: syncDate,
+      stale: !!staleText,
+      staleText,
+      manualLabel: syncLog && !syncLog.ok ? 'Letzter Sync mit Fehler' : null,
+    }
   } catch (e) {
     error = 'Spielplan konnte nicht geladen werden. Bitte versuche es später erneut.'
     console.error('Spielplan load error', e)
@@ -320,7 +399,6 @@ export default async function SpielplanPage({
           <div>
             <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">Spielplan</h1>
             <p className="mt-2 text-fc-fg/70">Alle Spiele der aktuellen Saison – Regionalliga Nordost</p>
-            <p className="mt-1 text-xs text-fc-fg/50">Datenstand je Spiel: siehe Detailseite/Quelle (z. B. OpenLigaDB). Änderungen möglich.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <a
@@ -329,9 +407,29 @@ export default async function SpielplanPage({
               download
             >
               <CalendarPlus className="h-4 w-4" aria-hidden="true" />
-              Termine als Kalender (.ics)
+              Nächste Termine (.ics)
+            </a>
+            <a
+              href="/api/v1/calendar/aue.ics?scope=all"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-fc-border bg-fc-surface/60 px-4 text-sm font-medium text-fc-fg transition-colors hover:border-fc-violet/35 hover:bg-fc-violet/10"
+              download
+            >
+              Saison (.ics)
             </a>
           </div>
+        </div>
+
+        <div className="mb-6">
+          <DataMeta
+            source={syncMeta.source}
+            updatedAt={syncMeta.updatedAt}
+            stale={syncMeta.stale}
+            staleLabel={syncMeta.staleText || 'Datenstand evtl. veraltet'}
+            manualLabel={syncMeta.manualLabel}
+            capabilityLabel="Spielplan/Ergebnisse je nach Quelle; Live-Events nicht garantiert"
+            capabilityTone="info"
+            note="Kurzfristige Änderungen (Verlegung, Ort, Status) sind möglich. Bei Abweichungen gelten offizielle Vereins-/Verbandsmeldungen; redaktionelle Korrekturen werden transparent gekennzeichnet."
+          />
         </div>
 
         <div className="mb-6 space-y-4">
@@ -401,9 +499,8 @@ export default async function SpielplanPage({
                 </span>
               ) : null}
               <span className="inline-flex items-center gap-2 rounded-lg border border-fc-border/70 bg-fc-surface/40 px-3 py-2 text-xs text-fc-fg/60">
-                Stand: {new Date().toLocaleString('de-DE')}
                 <Link href="/quellen" className="font-medium text-fc-violet hover:text-fc-violet-light underline-offset-2 hover:underline">
-                  Quellen
+                  Quellen & Transparenz
                 </Link>
               </span>
             </div>
@@ -426,7 +523,12 @@ export default async function SpielplanPage({
         ) : (
           <div className="space-y-4" id="matches-list">
             {matches.map((match) => (
-              <MatchCard key={match.id} match={match} />
+              <MatchCard
+                key={match.id}
+                match={match}
+                community={attendanceByMatch.get(match.id) ?? null}
+                myStatus={myAttendanceByMatch.get(match.id) ?? null}
+              />
             ))}
           </div>
         )}
