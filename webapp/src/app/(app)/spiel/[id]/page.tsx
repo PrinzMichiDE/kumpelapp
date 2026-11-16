@@ -26,6 +26,7 @@ import { DataMeta } from '@/components/data-meta'
 import { matchDataCapability } from '@/lib/data-freshness'
 import { getServerSession } from '@/lib/auth-server'
 import { PlayerOfMatchVote } from './player-of-match-vote'
+import { MatchAttendance } from './match-attendance'
 
 export const dynamic = 'force-dynamic'
 
@@ -258,8 +259,12 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
   const session = await getServerSession()
   let myVotePlayerId: string | null = null
   let voteResults: { totalVotes: number; top: { playerId: string; votes: number; share: number; player: { id: string; name: string; number: number | null; position: string } | null }[] } = { totalVotes: 0, top: [] }
+  let attendanceSummary: { counts: { GOING: number; MAYBE: number; NOT_GOING: number; total: number }; myStatus: 'GOING' | 'MAYBE' | 'NOT_GOING' | null } = {
+    counts: { GOING: 0, MAYBE: 0, NOT_GOING: 0, total: 0 },
+    myStatus: null,
+  }
   try {
-    const [groups, totalVotes, myVote] = await Promise.all([
+    const [groups, totalVotes, myVote, attendanceGroups, myAttendance] = await Promise.all([
       prisma.matchVote.groupBy({
         by: ['playerId'],
         where: { matchId: match.id },
@@ -270,6 +275,10 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
       prisma.matchVote.count({ where: { matchId: match.id } }),
       session?.user?.id
         ? prisma.matchVote.findUnique({ where: { userId_matchId: { userId: session.user.id, matchId: match.id } }, select: { playerId: true } })
+        : Promise.resolve(null),
+      prisma.attendance.groupBy({ by: ['status'], where: { matchId: match.id }, _count: { _all: true } }),
+      session?.user?.id
+        ? prisma.attendance.findUnique({ where: { userId_matchId: { userId: session.user.id, matchId: match.id } }, select: { status: true } })
         : Promise.resolve(null),
     ])
     myVotePlayerId = myVote?.playerId ?? null
@@ -287,8 +296,16 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
         player: byId.get(g.playerId) ?? null,
       })),
     }
+
+    const counts = { GOING: 0, MAYBE: 0, NOT_GOING: 0, total: 0 }
+    for (const g of attendanceGroups) {
+      const c = g._count._all
+      counts.total += c
+      if (g.status === 'GOING' || g.status === 'MAYBE' || g.status === 'NOT_GOING') counts[g.status] = c
+    }
+    attendanceSummary = { counts, myStatus: (myAttendance?.status as any) ?? null }
   } catch (e) {
-    console.error('Match vote summary load error', e)
+    console.error('Match vote/attendance summary load error', e)
   }
 
   const statusLabel =
@@ -720,6 +737,13 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
             </CardContent>
           </Card>
         ) : null}
+
+        <MatchAttendance
+          matchId={match.id}
+          initialCounts={attendanceSummary.counts}
+          initialMyStatus={attendanceSummary.myStatus}
+          isAuthenticated={!!session?.user?.id}
+        />
 
         <PlayerOfMatchVote
           matchId={match.id}
