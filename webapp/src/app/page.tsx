@@ -29,6 +29,7 @@ import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
 import { OfflineBanner } from '@/components/offline-banner'
 import { TodayInAueHistoryCard } from '@/components/today-in-aue-history'
+import { getServerSession } from '@/lib/auth-server'
 
 export const dynamic = 'force-dynamic'
 
@@ -130,8 +131,13 @@ export default async function HomePage() {
   let aueStanding: { position: number; points: number; played: number; league: string; season?: string | null } | null = null
   let latestNews: { id: string; title: string; publishedAt: Date; source: string; externalUrl: string }[] = []
   let attendanceByMatch = new Map<string, { going: number; maybe: number; total: number }>()
+  let nextMatchMyTip: { homeGoals: number; awayGoals: number } | null = null
+  let nextMatchMyAttendance: 'GOING' | 'MAYBE' | 'NOT_GOING' | null = null
+  let isLoggedIn = false
 
   try {
+    const session = await getServerSession()
+    isLoggedIn = !!session?.user?.id
     const [upcoming, finished, recent, upcomingList, aueRow, news] = await Promise.all([
       prisma.match.findFirst({
         where: {
@@ -273,6 +279,19 @@ export default async function HomePage() {
         console.error('Home attendance load error', attErr)
       }
     }
+
+    if (session?.user?.id && upcoming?.id) {
+      try {
+        const [myTip, myAtt] = await Promise.all([
+          prisma.tip.findUnique({ where: { userId_matchId: { userId: session.user.id, matchId: upcoming.id } }, select: { homeGoals: true, awayGoals: true } }),
+          prisma.attendance.findUnique({ where: { userId_matchId: { userId: session.user.id, matchId: upcoming.id } }, select: { status: true } }),
+        ])
+        nextMatchMyTip = myTip ? { homeGoals: myTip.homeGoals, awayGoals: myTip.awayGoals } : null
+        nextMatchMyAttendance = (myAtt?.status as any) ?? null
+      } catch (e) {
+        console.error('Home personal next-match load error', e)
+      }
+    }
   } catch (e) {
     console.error('Home data load error', e)
   }
@@ -395,6 +414,24 @@ export default async function HomePage() {
                           )
                         })()}
                       </Link>
+                      {isLoggedIn ? (
+                        <div className="rounded-lg border border-fc-violet/20 bg-fc-violet/5 p-2.5">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-fc-fg/55">Deine Aktionen</p>
+                          <div className="mt-1.5 flex flex-wrap gap-2 text-xs">
+                            <span className={cn('rounded-md border px-2 py-0.5 font-medium', nextMatchMyTip ? 'border-fc-win/30 bg-fc-win/10 text-fc-win' : 'border-fc-draw/30 bg-fc-draw/10 text-fc-draw')}>
+                              {nextMatchMyTip ? `Tipp: ${nextMatchMyTip.homeGoals}:${nextMatchMyTip.awayGoals}` : 'Tipp offen'}
+                            </span>
+                            <span className={cn('rounded-md border px-2 py-0.5 font-medium', nextMatchMyAttendance ? 'border-fc-win/30 bg-fc-win/10 text-fc-win' : 'border-fc-draw/30 bg-fc-draw/10 text-fc-draw')}>
+                              {nextMatchMyAttendance === 'GOING' ? 'Check-in: Dabei' : nextMatchMyAttendance === 'MAYBE' ? 'Check-in: Vielleicht' : nextMatchMyAttendance === 'NOT_GOING' ? 'Check-in: Nicht dabei' : 'Check-in offen'}
+                            </span>
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <Link href="/tippspiel" className="text-xs font-medium text-fc-violet hover:underline">Tippspiel</Link>
+                            <span className="text-fc-fg/30">·</span>
+                            <Link href={`/spiel/${nextMatch.id}`} className="text-xs font-medium text-fc-violet hover:underline">Check-in setzen</Link>
+                          </div>
+                        </div>
+                      ) : null}
                       <div className="flex flex-wrap gap-2 pt-1">
                         {nextMatch.ticketShopUrl ? (
                           <a
