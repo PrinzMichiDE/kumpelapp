@@ -8,7 +8,8 @@ import { formatDate, formatKickoff } from '@kumpelapp/utils'
 export const metadata: Metadata = { title: 'Tippspiel', description: 'Tippe Aue-Spiele im 3/2/1/0-System.' }
 export const dynamic = 'force-dynamic'
 
-export default async function TippspielPage() {
+export default async function TippspielPage({ searchParams }: { searchParams: Promise<{ saved?: string; error?: string }> }) {
+  const { saved, error } = await searchParams
   const session = await getServerSession()
   const userId = session?.user?.id
   const now = new Date()
@@ -31,10 +32,18 @@ export default async function TippspielPage() {
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-fc-fg">Tippspiel</h1>
-            <p className="mt-2 text-fc-fg/70">Punkte: 3 exakt · 2 Tendenz+Differenz · 1 richtige Tendenz · 0 falsch. Tipp bis Anstoß möglich; Auswertung erfolgt automatisch nach Ergebnis-Import.</p>
+            <p className="mt-2 text-fc-fg/70">Punkte: 3 exakt · 2 Tendenz+Differenz · 1 richtige Tendenz · 0 falsch. Tipp bis Anstoß möglich; Auswertung erfolgt automatisch nach Ergebnis-Import/Finalisierung.</p>
           </div>
-          {!userId && <Link href="/login?callbackUrl=/tippspiel"><Button>Anmelden zum Tippen</Button></Link>}
+          <div className="flex flex-wrap gap-2">
+            {userId ? (
+              <Link href="/meine-tipps"><Button variant="outline">Meine Tipps & Verlauf</Button></Link>
+            ) : (
+              <Link href="/login?callbackUrl=/tippspiel"><Button>Anmelden zum Tippen</Button></Link>
+            )}
+          </div>
         </div>
+        {saved ? <div className="mt-4 rounded-xl border border-fc-win/30 bg-fc-win/10 px-4 py-3 text-sm text-fc-fg">Tipp gespeichert.</div> : null}
+        {error ? <div className="mt-4 rounded-xl border border-fc-loss/30 bg-fc-loss/10 px-4 py-3 text-sm text-fc-fg" role="alert">Aktion nicht möglich ({error === 'locked' ? 'Tipp gesperrt (Anstoß/live/beendet)' : error === 'invalid' ? 'ungültige Eingabe' : 'bitte erneut versuchen'}).</div> : null}
 
         <div className="mt-8 grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2 space-y-4">
