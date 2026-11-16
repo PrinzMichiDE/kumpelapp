@@ -129,6 +129,7 @@ export default async function HomePage() {
   }[] = []
   let aueStanding: { position: number; points: number; played: number; league: string; season?: string | null } | null = null
   let latestNews: { id: string; title: string; publishedAt: Date; source: string; externalUrl: string }[] = []
+  let attendanceByMatch = new Map<string, { going: number; maybe: number; total: number }>()
 
   try {
     const [upcoming, finished, recent, upcomingList, aueRow, news] = await Promise.all([
@@ -251,6 +252,27 @@ export default async function HomePage() {
       }
     }
     latestNews = news
+
+    const attendanceIds = Array.from(new Set([...(upcoming ? [upcoming.id] : []), ...upcomingList.map((m) => m.id)]))
+    if (attendanceIds.length > 0) {
+      try {
+        const attGroups = await prisma.attendance.groupBy({
+          by: ['matchId', 'status'],
+          where: { matchId: { in: attendanceIds } },
+          _count: { _all: true },
+        })
+        for (const g of attGroups) {
+          const prev = attendanceByMatch.get(g.matchId) ?? { going: 0, maybe: 0, total: 0 }
+          const c = g._count._all
+          prev.total += c
+          if (g.status === 'GOING') prev.going += c
+          else if (g.status === 'MAYBE') prev.maybe += c
+          attendanceByMatch.set(g.matchId, prev)
+        }
+      } catch (attErr) {
+        console.error('Home attendance load error', attErr)
+      }
+    }
   } catch (e) {
     console.error('Home data load error', e)
   }
@@ -362,6 +384,16 @@ export default async function HomePage() {
                           {formatDate(nextMatch.kickoff)} · {formatKickoff(nextMatch.kickoff)} Uhr
                         </p>
                         {nextMatch.venue ? <p className="mt-1 text-sm text-fc-fg/60">{nextMatch.venue}</p> : null}
+                        {(() => {
+                          const att = attendanceByMatch.get(nextMatch.id)
+                          if (!att || att.total === 0) return null
+                          return (
+                            <p className="mt-2 inline-flex items-center rounded-md border border-fc-border/70 bg-fc-bg/30 px-2 py-1 text-xs text-fc-fg/75">
+                              <span className="font-semibold text-fc-win">{att.going}</span>&nbsp;dabei{att.maybe > 0 ? <span className="text-fc-fg/55"> · {att.maybe} vielleicht</span> : null}
+                              <span className="ml-1 text-fc-fg/50">· Community-Check-in</span>
+                            </p>
+                          )
+                        })()}
                       </Link>
                       <div className="flex flex-wrap gap-2 pt-1">
                         {nextMatch.ticketShopUrl ? (
@@ -592,6 +624,15 @@ export default async function HomePage() {
                                   {formatDate(m.kickoff)} · {formatKickoff(m.kickoff)} Uhr
                                   {m.venue ? ` · ${m.venue}` : ''}
                                 </p>
+                                {(() => {
+                                  const att = attendanceByMatch.get(m.id)
+                                  if (!att || att.total === 0) return null
+                                  return (
+                                    <p className="mt-1 text-[11px] text-fc-fg/60">
+                                      <span className="font-semibold text-fc-win">{att.going}</span> dabei{att.maybe > 0 ? <span> · {att.maybe} vielleicht</span> : null}
+                                    </p>
+                                  )
+                                })()}
                               </div>
                               <Badge variant="outline" className="shrink-0 text-[11px]">
                                 {m.homeTeam.isOwn ? 'Heim' : 'Auswärts'}
