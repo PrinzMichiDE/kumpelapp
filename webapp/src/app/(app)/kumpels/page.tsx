@@ -60,13 +60,20 @@ export default async function KumpelsPage() {
               ) : (
                 <div className="space-y-3">
                   {groups.map(g => (
-                    <div key={g.id} className="flex items-center justify-between rounded-lg border border-fc-border/60 px-4 py-3">
-                      <div>
+                    <Link
+                      key={g.id}
+                      href={`/kumpels/gruppen/${g.id}`}
+                      className="flex items-center justify-between rounded-lg border border-fc-border/60 px-4 py-3 transition-[border-color,background-color,box-shadow] duration-200 hover:border-fc-violet/35 hover:bg-fc-violet/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
+                    >
+                      <div className="min-w-0">
                         <p className="font-medium text-fc-fg">{g.name}</p>
                         <p className="text-xs text-fc-fg/60">{g._count.members} Mitglieder · Code: {g.inviteCode}</p>
                       </div>
-                      <Badge variant="secondary">Gruppe</Badge>
-                    </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant="secondary">Gruppe</Badge>
+                        <span className="text-sm font-medium text-fc-violet">Öffnen →</span>
+                      </div>
+                    </Link>
                   ))}
                   <div className="pt-2 space-y-3"><CreateGroupForm /><JoinGroupForm /></div>
                 </div>
@@ -96,7 +103,10 @@ export default async function KumpelsPage() {
                   <p className="text-fc-fg/60">{r.match?.homeTeam?.shortName || r.match?.homeTeam?.name} – {r.match?.awayTeam?.shortName || r.match?.awayTeam?.name} · von {r.user?.name || 'Fan'}</p>
                 </div>
               ))}
-              <p className="text-xs text-fc-fg/55">Hinweis: Keine öffentlichen Echtzeit-Standorte. Details & Absprachen erfolgen eigenverantwortlich; Moderation/Regeln gelten.</p>
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Link href="/kumpels/mitfahrten"><Button variant="outline" size="sm">Mitfahrbörse öffnen</Button></Link>
+              </div>
+              <p className="text-xs text-fc-fg/55">Hinweis: Keine öffentlichen Echtzeit-Standorte, keine Zahlungsabwicklung. Details & Absprachen eigenverantwortlich; bei Problemen bitte melden (Moderation/Regeln).</p>
             </CardContent>
           </Card>
 
