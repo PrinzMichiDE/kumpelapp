@@ -3,8 +3,9 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { getServerSession } from '@/lib/auth-server'
 import { prisma } from '@kumpelapp/db'
-import { Card, CardContent, CardHeader, CardTitle, Button } from '@kumpelapp/ui'
-import { Settings, Ticket, Users, Bell, Heart, LogOut, MapPinned, BarChart3, Brain, Trophy } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge } from '@kumpelapp/ui'
+import { formatDate, formatKickoff } from '@kumpelapp/utils'
+import { Settings, Ticket, Users, Bell, Heart, LogOut, MapPinned, BarChart3, Brain, Trophy, CalendarCheck2, ClipboardCheck } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Profil',
@@ -16,7 +17,8 @@ export default async function ProfilPage() {
   if (!session?.user?.id) redirect('/login?callbackUrl=/profil')
 
   const userId = session.user.id
-  const [tipCount, groupCount, ticketCount, favCount, visitedVenueGroups, tipAgg, scoredTipCount, exactTipCount, quizAttempts, attendanceCounts] = await Promise.all([
+  const now = new Date()
+  const [tipCount, groupCount, ticketCount, favCount, visitedVenueGroups, tipAgg, scoredTipCount, exactTipCount, quizAttempts, attendanceCounts, nextMatch] = await Promise.all([
     prisma.tip.count({ where: { userId } }),
     prisma.groupMember.count({ where: { userId } }),
     prisma.ticket.count({ where: { userId } }),
@@ -27,7 +29,34 @@ export default async function ProfilPage() {
     prisma.tip.count({ where: { userId, points: 3 } }),
     prisma.quizAttempt.findMany({ where: { userId }, select: { correct: true }, orderBy: { createdAt: 'desc' } }),
     prisma.attendance.groupBy({ by: ['status'], where: { userId }, _count: { _all: true } }),
+    prisma.match.findFirst({
+      where: {
+        kickoff: { gte: new Date(now.getTime() - 2 * 60 * 60 * 1000) },
+        status: { in: ['SCHEDULED', 'LIVE', 'POSTPONED'] },
+        OR: [{ homeTeam: { isOwn: true } }, { awayTeam: { isOwn: true } }],
+      },
+      include: {
+        homeTeam: { select: { shortName: true, name: true } },
+        awayTeam: { select: { shortName: true, name: true } },
+      },
+      orderBy: { kickoff: 'asc' },
+    }),
   ])
+
+  let nextTip: { homeGoals: number; awayGoals: number } | null = null
+  let nextAttendance: 'GOING' | 'MAYBE' | 'NOT_GOING' | null = null
+  if (nextMatch) {
+    try {
+      const [tip, att] = await Promise.all([
+        prisma.tip.findUnique({ where: { userId_matchId: { userId, matchId: nextMatch.id } }, select: { homeGoals: true, awayGoals: true } }),
+        prisma.attendance.findUnique({ where: { userId_matchId: { userId, matchId: nextMatch.id } }, select: { status: true } }),
+      ])
+      nextTip = tip ? { homeGoals: tip.homeGoals, awayGoals: tip.awayGoals } : null
+      nextAttendance = (att?.status as any) ?? null
+    } catch (e) {
+      console.error('Profil next actions load error', e)
+    }
+  }
   const visitedVenueCount = visitedVenueGroups.length
   const totalTipPoints = tipAgg._sum.points ?? 0
   const avgTipPoints = scoredTipCount > 0 ? (totalTipPoints / scoredTipCount).toFixed(2).replace('.', ',') : '0,00'
@@ -64,28 +93,62 @@ export default async function ProfilPage() {
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
-          <Card className="border-fc-border/70">
-            <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Meine Bilanz</CardTitle></CardHeader>
-            <CardContent className="space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3">
-                  <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-fc-fg/55"><Trophy className="h-3.5 w-3.5" aria-hidden="true" /> Tippspiel</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">{totalTipPoints} <span className="text-sm font-semibold text-fc-fg/60">Punkte</span></p>
-                  <p className="mt-0.5 text-xs text-fc-fg/65">{scoredTipCount} ausgewertet · {exactTipCount}× exakt · Ø {avgTipPoints}</p>
+          <div className="space-y-4">
+            {nextMatch ? (
+              <Card className="border-fc-violet/25 bg-gradient-to-b from-fc-violet/[0.06] to-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><ClipboardCheck className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Nächste Aktionen</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 text-sm">
+                  <div>
+                    <p className="font-semibold text-fc-fg">{(nextMatch.homeTeam.shortName || nextMatch.homeTeam.name)} – {(nextMatch.awayTeam.shortName || nextMatch.awayTeam.name)}</p>
+                    <p className="mt-0.5 text-fc-fg/65">{formatDate(nextMatch.kickoff)} · {formatKickoff(nextMatch.kickoff)} Uhr</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {nextTip ? (
+                      <Badge variant="secondary">Tipp: {nextTip.homeGoals}:{nextTip.awayGoals}</Badge>
+                    ) : (
+                      <Badge variant="outline">Tipp fehlt</Badge>
+                    )}
+                    {nextAttendance ? (
+                      <Badge variant={nextAttendance === 'GOING' ? 'success' : nextAttendance === 'MAYBE' ? 'secondary' : 'outline'}>
+                        Check-in: {nextAttendance === 'GOING' ? 'Dabei' : nextAttendance === 'MAYBE' ? 'Vielleicht' : 'Nicht dabei'}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline">Check-in fehlt</Badge>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    <Link href="/tippspiel" className="inline-flex items-center rounded-lg border border-fc-border bg-fc-surface/60 px-3 py-2 text-sm font-medium text-fc-fg transition-colors hover:border-fc-violet/40 hover:bg-fc-violet/10">{nextTip ? 'Tipp prüfen' : 'Jetzt tippen'}</Link>
+                    <Link href={`/spiel/${nextMatch.id}`} className="inline-flex items-center rounded-lg bg-fc-violet px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-fc-violet/90"><CalendarCheck2 className="mr-1.5 h-4 w-4" aria-hidden="true" /> Zum Spiel & Check-in</Link>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+
+            <Card className="border-fc-border/70">
+              <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Meine Bilanz</CardTitle></CardHeader>
+              <CardContent className="space-y-4 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3">
+                    <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-fc-fg/55"><Trophy className="h-3.5 w-3.5" aria-hidden="true" /> Tippspiel</p>
+                    <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">{totalTipPoints} <span className="text-sm font-semibold text-fc-fg/60">Punkte</span></p>
+                    <p className="mt-0.5 text-xs text-fc-fg/65">{scoredTipCount} ausgewertet · {exactTipCount}× exakt · Ø {avgTipPoints}</p>
+                  </div>
+                  <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3">
+                    <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-fc-fg/55"><Brain className="h-3.5 w-3.5" aria-hidden="true" /> Quiz</p>
+                    <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">{quizAccuracy}% <span className="text-sm font-semibold text-fc-fg/60">Quote</span></p>
+                    <p className="mt-0.5 text-xs text-fc-fg/65">{quizCorrect}/{quizTotal} richtig · Serie {quizStreak}</p>
+                  </div>
                 </div>
                 <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3">
-                  <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-fc-fg/55"><Brain className="h-3.5 w-3.5" aria-hidden="true" /> Quiz</p>
-                  <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">{quizAccuracy}% <span className="text-sm font-semibold text-fc-fg/60">Quote</span></p>
-                  <p className="mt-0.5 text-xs text-fc-fg/65">{quizCorrect}/{quizTotal} richtig · Serie {quizStreak}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-fc-fg/55">Matchday & Stadion</p>
+                  <p className="mt-1 text-fc-fg/80"><span className="font-semibold text-fc-fg">{goingCount}</span> Zusagen{maybeCount > 0 ? <span> · <span className="font-semibold text-fc-fg">{maybeCount}</span> vielleicht</span> : null} · <span className="font-semibold text-fc-fg">{visitedVenueCount}</span> Stadien besucht</p>
                 </div>
-              </div>
-              <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3">
-                <p className="text-xs font-medium uppercase tracking-wide text-fc-fg/55">Matchday & Stadion</p>
-                <p className="mt-1 text-fc-fg/80"><span className="font-semibold text-fc-fg">{goingCount}</span> Zusagen{maybeCount > 0 ? <span> · <span className="font-semibold text-fc-fg">{maybeCount}</span> vielleicht</span> : null} · <span className="font-semibold text-fc-fg">{visitedVenueCount}</span> Stadien besucht</p>
-              </div>
-              <p className="text-xs text-fc-fg/55">Detaillierte Werte auch per API: <code className="rounded bg-fc-bg/40 px-1 py-0.5">GET /api/v1/me/stats</code></p>
-            </CardContent>
-          </Card>
+                <p className="text-xs text-fc-fg/55">Detaillierte Werte auch per API: <code className="rounded bg-fc-bg/40 px-1 py-0.5">GET /api/v1/me/stats</code></p>
+              </CardContent>
+            </Card>
+          </div>
 
           <div className="space-y-4">
             <Card className="border-fc-border/70">
