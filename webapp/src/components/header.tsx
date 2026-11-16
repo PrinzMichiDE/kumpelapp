@@ -25,6 +25,7 @@ const navigation = [
   { name: 'Kader', href: '/kader' },
   { name: 'News', href: '/news' },
   { name: 'Auswärts', href: '/auswaerts' },
+  { name: 'Kalender', href: '/kalender' },
   { name: 'Verein', href: '/verein' },
   { name: 'Tradition', href: '/tradition' },
   { name: 'Quiz', href: '/quiz' },

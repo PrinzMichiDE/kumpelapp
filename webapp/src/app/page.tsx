@@ -46,6 +46,7 @@ const features = [
   { name: 'Kader', href: '/kader', icon: Users, description: 'Spieler, Positionen & Statistiken' },
   { name: 'News', href: '/news', icon: Newspaper, description: 'Aktuelle Nachrichten vom Verein' },
   { name: 'Auswärts', href: '/auswaerts', icon: MapPin, description: 'Stadion-Guide & Anfahrtsinfos' },
+  { name: 'Kalender', href: '/kalender', icon: Calendar, description: 'Spieltermine als iCal abonnieren' },
   { name: 'Verein', href: '/verein', icon: Building, description: 'Teams, Abteilungen & Mitgliedschaft' },
   { name: 'Tradition', href: '/tradition', icon: History, description: 'Titel, Legenden & Chronik' },
   { name: 'Quiz', href: '/quiz', icon: Brain, description: 'Veilchen-Wissen testen & Serien sammeln' },
