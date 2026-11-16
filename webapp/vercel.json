@@ -1,5 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "cd .. && corepack enable && corepack prepare pnpm@10.4.1 --activate && pnpm install --no-frozen-lockfile",
-  "buildCommand": "cd .. && corepack enable && corepack prepare pnpm@10.4.1 --activate && pnpm --filter @kumpelapp/db db:generate && pnpm --filter webapp build"
+  "installCommand": "cd .. && corepack enable && pnpm install --no-frozen-lockfile",
+  "buildCommand": "cd .. && corepack enable && pnpm --filter @kumpelapp/db db:generate && pnpm --filter webapp build"
 }
