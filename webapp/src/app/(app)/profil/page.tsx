@@ -51,6 +51,7 @@ export default async function ProfilPage() {
               <QuickLink href="/tippspiel" label="Tippspiel (3/2/1/0)" />
               <QuickLink href="/tickets" label="Tickets & Wallet" />
               <QuickLink href="/auswaerts" label="Auswärts-Guide" />
+              <QuickLink href="/sammler" label="Stadion-Sammler" />
             </CardContent>
           </Card>
           <Card className="border-fc-border/70">

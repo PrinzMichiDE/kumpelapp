@@ -4,6 +4,7 @@ import { cn } from '@kumpelapp/utils'
 import { AlertCircle, SearchX } from 'lucide-react'
 import Link from 'next/link'
 import { AuswaertsExplorer } from './auswaerts-explorer'
+import { DataMeta } from '@/components/data-meta'
 
 export const dynamic = 'force-dynamic'
 
@@ -132,9 +133,26 @@ export default async function AuswaertsPage({
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">Auswärts-Guide</h1>
+            <p className="mt-2 text-fc-fg/70">Stadien, Anfahrt, Gästeblock und Parken – mit Bezug zu Aue-Auswärtsspielen</p>
+          </div>
+          <Link
+            href="/sammler"
+            className="inline-flex items-center justify-center rounded-xl border border-fc-violet/30 bg-fc-violet/10 px-4 py-2.5 text-sm font-semibold text-fc-fg transition-colors hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+          >
+            Stadion-Sammler öffnen
+          </Link>
+        </div>
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">Auswärts-Guide</h1>
-          <p className="mt-2 text-fc-fg/70">Stadien, Anfahrt, Gästeblock und Parken – mit Bezug zu Aue-Auswärtsspielen</p>
+          <DataMeta
+            source="Seed-/Venue-Datenbank + redaktionelle Pflege"
+            reviewStatus={items.some((i) => i.venue.reviewStatus === 'CHECKED') ? 'DRAFT' : 'AUTO'}
+            capabilityLabel="Auswärtsinfos mit Prüfstatus je Stadion"
+            capabilityTone="info"
+            note="Kritische Hinweise (Gästeblock, Einlass, Parken, ÖPNV, Barriere) bitte vor Reise mit offiziellen Quellen abgleichen. Prüfstatus und Stand siehe Stadiondetail."
+          />
         </div>
 
         <div className="mb-6 flex flex-wrap items-center gap-2" role="group" aria-label="Auswärtsfahrten filtern">
