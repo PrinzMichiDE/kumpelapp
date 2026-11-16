@@ -51,6 +51,7 @@ export default async function StadionmodusPage() {
   let error: string | null = null
   let attendanceSummary = { going: 0, maybe: 0, notGoing: 0, total: 0 }
   let myAttendanceStatus: 'GOING' | 'MAYBE' | 'NOT_GOING' | null = null
+  let myTip: { homeGoals: number; awayGoals: number; points: number | null } | null = null
   let isAuthenticated = false
 
   try {
@@ -93,10 +94,13 @@ export default async function StadionmodusPage() {
 
     if (match) {
       try {
-        const [groups, my] = await Promise.all([
+        const [groups, my, tip] = await Promise.all([
           prisma.attendance.groupBy({ by: ['status'], where: { matchId: match.id }, _count: { _all: true } }),
           session?.user?.id
             ? prisma.attendance.findUnique({ where: { userId_matchId: { userId: session.user.id, matchId: match.id } }, select: { status: true } })
+            : Promise.resolve(null),
+          session?.user?.id
+            ? prisma.tip.findUnique({ where: { userId_matchId: { userId: session.user.id, matchId: match.id } }, select: { homeGoals: true, awayGoals: true, points: true } })
             : Promise.resolve(null),
         ])
         const counts = { going: 0, maybe: 0, notGoing: 0, total: 0 }
@@ -109,8 +113,9 @@ export default async function StadionmodusPage() {
         }
         attendanceSummary = counts
         myAttendanceStatus = (my?.status as any) ?? null
+        myTip = tip ? { homeGoals: tip.homeGoals, awayGoals: tip.awayGoals, points: tip.points } : null
       } catch (e) {
-        console.error('Stadionmodus attendance load error', e)
+        console.error('Stadionmodus attendance/tip load error', e)
       }
     }
   } catch (e) {
@@ -276,20 +281,30 @@ export default async function StadionmodusPage() {
                 <p className="text-xs text-fc-fg/60">Rückmeldungen</p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              {isAuthenticated ? (
-                <span className={cn('inline-flex items-center rounded-md border px-2.5 py-1 text-sm font-medium',
-                  myAttendanceStatus === 'GOING' ? 'border-fc-win/30 bg-fc-win/10 text-fc-win'
-                  : myAttendanceStatus === 'MAYBE' ? 'border-fc-draw/30 bg-fc-draw/10 text-fc-draw'
-                  : myAttendanceStatus === 'NOT_GOING' ? 'border-fc-loss/30 bg-fc-loss/10 text-fc-loss'
-                  : 'border-fc-border/70 bg-fc-bg/30 text-fc-fg/70')}>
-                  {myAttendanceStatus === 'GOING' ? 'Dein Status: Dabei' : myAttendanceStatus === 'MAYBE' ? 'Dein Status: Vielleicht' : myAttendanceStatus === 'NOT_GOING' ? 'Dein Status: Nicht dabei' : 'Dein Status: Noch nicht gesetzt'}
-                </span>
-              ) : (
-                <span className="text-sm text-fc-fg/65">Melde dich an, um deinen Status zu speichern.</span>
-              )}
-              <Link href={`/spiel/${match.id}`} className="inline-flex h-10 items-center rounded-lg bg-fc-violet px-4 text-sm font-medium text-white hover:bg-fc-violet/90">Check-in setzen / ändern</Link>
-              <Link href="/checkins" className="inline-flex h-10 items-center rounded-lg border border-fc-border px-4 text-sm font-medium text-fc-fg hover:border-fc-violet/40">Meine Check-ins</Link>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                {isAuthenticated ? (
+                  <span className={cn('inline-flex items-center rounded-md border px-2.5 py-1 text-sm font-medium',
+                    myAttendanceStatus === 'GOING' ? 'border-fc-win/30 bg-fc-win/10 text-fc-win'
+                    : myAttendanceStatus === 'MAYBE' ? 'border-fc-draw/30 bg-fc-draw/10 text-fc-draw'
+                    : myAttendanceStatus === 'NOT_GOING' ? 'border-fc-loss/30 bg-fc-loss/10 text-fc-loss'
+                    : 'border-fc-border/70 bg-fc-bg/30 text-fc-fg/70')}>
+                    {myAttendanceStatus === 'GOING' ? 'Dein Status: Dabei' : myAttendanceStatus === 'MAYBE' ? 'Dein Status: Vielleicht' : myAttendanceStatus === 'NOT_GOING' ? 'Dein Status: Nicht dabei' : 'Dein Status: Noch nicht gesetzt'}
+                  </span>
+                ) : (
+                  <span className="text-sm text-fc-fg/65">Melde dich an, um Status und Tipp zu verwalten.</span>
+                )}
+                {isAuthenticated ? (
+                  <p className="text-sm text-fc-fg/75">
+                    Dein Tipp: {myTip ? <><span className="font-semibold tabular-nums text-fc-fg">{myTip.homeGoals}:{myTip.awayGoals}</span>{myTip.points != null ? <span className="text-fc-fg/60"> · {myTip.points} P</span> : <span className="text-fc-fg/55"> · noch offen</span>}</> : <span className="text-fc-fg/55">Noch kein Tipp abgegeben</span>}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Link href={`/spiel/${match.id}`} className="inline-flex h-10 items-center rounded-lg bg-fc-violet px-4 text-sm font-medium text-white hover:bg-fc-violet/90">Check-in setzen / ändern</Link>
+                <Link href="/tippspiel" className="inline-flex h-10 items-center rounded-lg border border-fc-border px-4 text-sm font-medium text-fc-fg hover:border-fc-violet/40">{myTip ? 'Tipp ansehen/ändern' : 'Jetzt tippen'}</Link>
+                <Link href="/checkins" className="inline-flex h-10 items-center rounded-lg border border-fc-border px-4 text-sm font-medium text-fc-fg hover:border-fc-violet/40">Meine Check-ins</Link>
+              </div>
             </div>
           </CardContent>
         </Card>
