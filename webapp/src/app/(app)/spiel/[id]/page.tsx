@@ -252,6 +252,37 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
     : match.homeTeam.shortName || match.homeTeam.name
   const venueQuery = match.venue ? `${match.venue.name}, ${match.venue.city}` : null
   const mapsUrl = venueQuery ? mapsSearchUrl(venueQuery) : null
+
+  let voteResults: { totalVotes: number; top: { playerId: string; votes: number; share: number; player: { name: string; number: number | null; position: string } | null }[] } = { totalVotes: 0, top: [] }
+  try {
+    const [groups, totalVotes] = await Promise.all([
+      prisma.matchVote.groupBy({
+        by: ['playerId'],
+        where: { matchId: match.id },
+        _count: { playerId: true },
+        orderBy: { _count: { playerId: 'desc' } },
+        take: 5,
+      }),
+      prisma.matchVote.count({ where: { matchId: match.id } }),
+    ])
+    const ids = groups.map((g) => g.playerId)
+    const players = ids.length
+      ? await prisma.player.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, number: true, position: true } })
+      : []
+    const byId = new Map(players.map((p) => [p.id, p]))
+    voteResults = {
+      totalVotes,
+      top: groups.map((g) => ({
+        playerId: g.playerId,
+        votes: g._count.playerId,
+        share: totalVotes > 0 ? Number((g._count.playerId / totalVotes).toFixed(4)) : 0,
+        player: byId.get(g.playerId) ?? null,
+      })),
+    }
+  } catch (e) {
+    console.error('Match vote summary load error', e)
+  }
+
   const statusLabel =
     match.status === 'LIVE'
       ? 'Läuft gerade'
@@ -681,6 +712,54 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
             </CardContent>
           </Card>
         ) : null}
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Trophy className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Spieler des Spiels (Fan-Wahl)
+            </CardTitle>
+            <p className="text-sm text-fc-fg/60">
+              Community-Abstimmung per API verfügbar · {voteResults.totalVotes} {voteResults.totalVotes === 1 ? 'Stimme' : 'Stimmen'} bisher
+            </p>
+          </CardHeader>
+          <CardContent>
+            {voteResults.top.length > 0 ? (
+              <ol className="space-y-3">
+                {voteResults.top.map((entry, idx) => {
+                  const pct = voteResults.totalVotes > 0 ? Math.round(entry.share * 100) : 0
+                  return (
+                    <li key={entry.playerId} className="rounded-lg border border-fc-border/70 bg-fc-surface/40 p-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="font-medium text-fc-fg">
+                            <span className="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-fc-violet/15 text-xs font-bold text-fc-violet">{idx + 1}</span>
+                            {entry.player ? (
+                              <>
+                                {entry.player.number != null ? <span className="tabular-nums text-fc-fg/60">#{entry.player.number} </span> : null}
+                                {entry.player.name}
+                              </>
+                            ) : (
+                              'Unbekannter Spieler'
+                            )}
+                          </p>
+                          <p className="mt-1 text-xs text-fc-fg/55">{entry.votes} {entry.votes === 1 ? 'Stimme' : 'Stimmen'} · {pct}%</p>
+                        </div>
+                      </div>
+                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-fc-border/40" aria-hidden="true">
+                        <div className="h-full rounded-full bg-fc-violet" style={{ width: `${Math.min(100, Math.max(0, pct))}%` }} />
+                      </div>
+                    </li>
+                  )
+                })}
+              </ol>
+            ) : (
+              <p className="text-sm text-fc-fg/65">Noch keine Stimmen abgegeben. Sobald Fans abstimmen, erscheinen hier die Top-Spieler.</p>
+            )}
+            <p className="mt-4 text-xs text-fc-fg/55">
+              Abstimmen können angemeldete Nutzer über die App-API (<code className="rounded bg-fc-bg/40 px-1 py-0.5">POST /api/v1/me/votes</code>) mit <code className="rounded bg-fc-bg/40 px-1 py-0.5">matchId</code> und <code className="rounded bg-fc-bg/40 px-1 py-0.5">playerId</code>. Ergebnisse: <code className="rounded bg-fc-bg/40 px-1 py-0.5">GET /api/v1/matches/{match.id}/votes</code>.
+            </p>
+          </CardContent>
+        </Card>
         <Card className="mt-6 border-fc-border/70">
           <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm text-fc-fg/65">
             <div className="space-y-1">
