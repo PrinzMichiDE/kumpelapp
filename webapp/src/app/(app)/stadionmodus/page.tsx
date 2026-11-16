@@ -19,10 +19,12 @@ import {
   Ticket,
   Train,
   Tv,
+  Users,
   WifiOff,
 } from 'lucide-react'
 import { DataMeta } from '@/components/data-meta'
 import { staleLabel } from '@/lib/data-freshness'
+import { getServerSession } from '@/lib/auth-server'
 
 export const metadata: Metadata = {
   title: 'Stadionmodus',
@@ -47,8 +49,14 @@ export default async function StadionmodusPage() {
   const now = new Date()
   let match: any = null
   let error: string | null = null
+  let attendanceSummary = { going: 0, maybe: 0, notGoing: 0, total: 0 }
+  let myAttendanceStatus: 'GOING' | 'MAYBE' | 'NOT_GOING' | null = null
+  let isAuthenticated = false
 
   try {
+    const session = await getServerSession()
+    isAuthenticated = !!session?.user?.id
+
     match = await prisma.match.findFirst({
       where: {
         kickoff: { gte: new Date(now.getTime() - 4 * 60 * 60 * 1000) },
@@ -82,6 +90,29 @@ export default async function StadionmodusPage() {
       },
       orderBy: { kickoff: 'asc' },
     })
+
+    if (match) {
+      try {
+        const [groups, my] = await Promise.all([
+          prisma.attendance.groupBy({ by: ['status'], where: { matchId: match.id }, _count: { _all: true } }),
+          session?.user?.id
+            ? prisma.attendance.findUnique({ where: { userId_matchId: { userId: session.user.id, matchId: match.id } }, select: { status: true } })
+            : Promise.resolve(null),
+        ])
+        const counts = { going: 0, maybe: 0, notGoing: 0, total: 0 }
+        for (const g of groups) {
+          const c = g._count._all
+          counts.total += c
+          if (g.status === 'GOING') counts.going = c
+          else if (g.status === 'MAYBE') counts.maybe = c
+          else if (g.status === 'NOT_GOING') counts.notGoing = c
+        }
+        attendanceSummary = counts
+        myAttendanceStatus = (my?.status as any) ?? null
+      } catch (e) {
+        console.error('Stadionmodus attendance load error', e)
+      }
+    }
   } catch (e) {
     console.error('Stadionmodus load error', e)
     error = 'Matchday-Daten konnten nicht geladen werden. Bitte später erneut versuchen oder Offline-Bereich prüfen.'
@@ -217,6 +248,48 @@ export default async function StadionmodusPage() {
               {mapsUrl ? <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-fc-border px-4 text-sm font-medium text-fc-fg hover:border-fc-violet/40"><Navigation className="h-4 w-4" /> Route <ExternalLink className="h-3.5 w-3.5" /></a> : null}
               {sale?.shopUrl ? <a href={sale.shopUrl} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-fc-violet/30 bg-fc-violet/10 px-4 text-sm font-medium text-fc-fg hover:bg-fc-violet/15"><Ticket className="h-4 w-4" /> Tickets <ExternalLink className="h-3.5 w-3.5" /></a> : null}
               <Link href="/tickets" className="inline-flex h-10 items-center gap-1.5 rounded-lg border border-fc-border px-4 text-sm font-medium text-fc-fg hover:border-fc-violet/40"><Ticket className="h-4 w-4" /> Meine Tickets</Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="mt-6 border-fc-violet/20">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg"><Users className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Community & Check-in</CardTitle>
+            <p className="text-sm text-fc-fg/60">Wer ist beim nächsten Spiel dabei? Setze deinen Status auf der Spieldetailseite.</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3 text-center">
+                <p className="text-xl font-bold tabular-nums text-fc-fg">{attendanceSummary.going}</p>
+                <p className="text-xs text-fc-fg/60">Dabei</p>
+              </div>
+              <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3 text-center">
+                <p className="text-xl font-bold tabular-nums text-fc-fg">{attendanceSummary.maybe}</p>
+                <p className="text-xs text-fc-fg/60">Vielleicht</p>
+              </div>
+              <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3 text-center">
+                <p className="text-xl font-bold tabular-nums text-fc-fg">{attendanceSummary.notGoing}</p>
+                <p className="text-xs text-fc-fg/60">Nicht dabei</p>
+              </div>
+              <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3 text-center">
+                <p className="text-xl font-bold tabular-nums text-fc-fg">{attendanceSummary.total}</p>
+                <p className="text-xs text-fc-fg/60">Rückmeldungen</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              {isAuthenticated ? (
+                <span className={cn('inline-flex items-center rounded-md border px-2.5 py-1 text-sm font-medium',
+                  myAttendanceStatus === 'GOING' ? 'border-fc-win/30 bg-fc-win/10 text-fc-win'
+                  : myAttendanceStatus === 'MAYBE' ? 'border-fc-draw/30 bg-fc-draw/10 text-fc-draw'
+                  : myAttendanceStatus === 'NOT_GOING' ? 'border-fc-loss/30 bg-fc-loss/10 text-fc-loss'
+                  : 'border-fc-border/70 bg-fc-bg/30 text-fc-fg/70')}>
+                  {myAttendanceStatus === 'GOING' ? 'Dein Status: Dabei' : myAttendanceStatus === 'MAYBE' ? 'Dein Status: Vielleicht' : myAttendanceStatus === 'NOT_GOING' ? 'Dein Status: Nicht dabei' : 'Dein Status: Noch nicht gesetzt'}
+                </span>
+              ) : (
+                <span className="text-sm text-fc-fg/65">Melde dich an, um deinen Status zu speichern.</span>
+              )}
+              <Link href={`/spiel/${match.id}`} className="inline-flex h-10 items-center rounded-lg bg-fc-violet px-4 text-sm font-medium text-white hover:bg-fc-violet/90">Check-in setzen / ändern</Link>
+              <Link href="/checkins" className="inline-flex h-10 items-center rounded-lg border border-fc-border px-4 text-sm font-medium text-fc-fg hover:border-fc-violet/40">Meine Check-ins</Link>
             </div>
           </CardContent>
         </Card>
