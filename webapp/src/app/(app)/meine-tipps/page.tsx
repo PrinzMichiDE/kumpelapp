@@ -32,19 +32,33 @@ export default async function MeineTippsPage({ searchParams }: { searchParams: P
   const viewFilter = view === 'open' || view === 'scored' ? view : 'all'
   const resultFilter = result === 'exact' || result === 'tendency' || result === 'wrong' ? result : 'all'
 
-  const tips = await prisma.tip.findMany({
-    where: { userId },
-    include: {
-      match: {
-        include: {
-          homeTeam: { select: { name: true, shortName: true, isOwn: true } },
-          awayTeam: { select: { name: true, shortName: true, isOwn: true } },
+  const [tips, nextMatch] = await Promise.all([
+    prisma.tip.findMany({
+      where: { userId },
+      include: {
+        match: {
+          include: {
+            homeTeam: { select: { name: true, shortName: true, isOwn: true } },
+            awayTeam: { select: { name: true, shortName: true, isOwn: true } },
+          },
         },
       },
-    },
-    orderBy: [{ match: { kickoff: 'desc' } }, { createdAt: 'desc' }],
-    take: 300,
-  }).catch(() => [] as any[])
+      orderBy: [{ match: { kickoff: 'desc' } }, { createdAt: 'desc' }],
+      take: 300,
+    }).catch(() => [] as any[]),
+    prisma.match.findFirst({
+      where: { kickoff: { gte: now }, status: { in: ['SCHEDULED', 'LIVE', 'POSTPONED'] } },
+      orderBy: { kickoff: 'asc' },
+      select: {
+        id: true,
+        kickoff: true,
+        homeTeam: { select: { shortName: true, name: true } },
+        awayTeam: { select: { shortName: true, name: true } },
+      },
+    }).catch(() => null),
+  ])
+
+  const hasTipForNext = nextMatch ? tips.some((t) => t.matchId === nextMatch.id) : false
 
   const scoredAll = tips.filter((t) => t.points != null)
   const openAll = tips.filter((t) => t.points == null)
@@ -148,6 +162,22 @@ export default async function MeineTippsPage({ searchParams }: { searchParams: P
             <p className="mt-1 text-fc-fg/70">Historie, Ergebnisse und Punkte deiner Tipps auf einen Blick.</p>
           </div>
         </div>
+
+        {nextMatch && !hasTipForNext && nextMatch.kickoff.getTime() > now.getTime() ? (
+          <Card className="mb-6 border-fc-draw/30 bg-fc-draw/5">
+            <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-fc-fg">Nächstes Spiel noch ohne Tipp</p>
+                <p className="mt-0.5 text-sm text-fc-fg/70">
+                  {nextMatch.homeTeam.shortName || nextMatch.homeTeam.name} – {nextMatch.awayTeam.shortName || nextMatch.awayTeam.name} · {formatDate(nextMatch.kickoff)} {formatKickoff(nextMatch.kickoff)} Uhr
+                </p>
+              </div>
+              <Link href="/tippspiel" className="inline-flex shrink-0">
+                <Button size="sm">Jetzt tippen</Button>
+              </Link>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="border-fc-border/70"><CardContent className="pt-5"><p className="text-sm text-fc-fg/60">Tipps gesamt</p><p className="mt-1 text-2xl font-bold tabular-nums text-fc-fg">{tips.length}</p></CardContent></Card>
