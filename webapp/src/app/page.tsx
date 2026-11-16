@@ -782,24 +782,49 @@ export default async function HomePage() {
 
         <section className="py-16 md:py-24 bg-fc-bg">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-fc-fg">Bereit für die Saison 2026/27?</h2>
-            <p className="mt-4 text-lg text-fc-fg/70 max-w-2xl mx-auto">
-              Registriere dich kostenlos und verpasse kein Spiel, keine News und keine Aktion mehr.
-            </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-              <Link
-                href="/register"
-                className="inline-flex w-full items-center justify-center rounded-xl bg-fc-violet px-7 py-3 text-base font-semibold text-white shadow-sm shadow-fc-violet/20 transition-[background-color,box-shadow,transform] duration-200 hover:bg-fc-violet-dark hover:shadow-md hover:shadow-fc-violet/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg active:scale-[0.98] sm:w-auto"
-              >
-                Jetzt registrieren
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex w-full items-center justify-center rounded-xl border border-fc-violet/30 bg-fc-violet/10 px-7 py-3 text-base font-semibold text-fc-fg transition-[background-color,border-color,box-shadow,transform] duration-200 hover:border-fc-violet/45 hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg active:scale-[0.98] sm:w-auto"
-              >
-                Anmelden
-              </Link>
-            </div>
+            {isLoggedIn ? (
+              <>
+                <h2 className="text-3xl md:text-4xl font-bold text-fc-fg">Willkommen zurück im Veilchen-Kreis</h2>
+                <p className="mt-4 text-lg text-fc-fg/70 max-w-2xl mx-auto">
+                  Verwalte dein Profil, tippe mit den Kumpels und behalte deine nächsten Spieltage im Blick – alles an einem Ort.
+                </p>
+                <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+                  <Link
+                    href="/profil"
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-fc-violet px-7 py-3 text-base font-semibold text-white shadow-sm shadow-fc-violet/20 transition-[background-color,box-shadow,transform] duration-200 hover:bg-fc-violet-dark hover:shadow-md hover:shadow-fc-violet/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg active:scale-[0.98] sm:w-auto"
+                  >
+                    Zum Profil
+                  </Link>
+                  <Link
+                    href="/kumpels"
+                    className="inline-flex w-full items-center justify-center rounded-xl border border-fc-violet/30 bg-fc-violet/10 px-7 py-3 text-base font-semibold text-fc-fg transition-[background-color,border-color,box-shadow,transform] duration-200 hover:border-fc-violet/45 hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg active:scale-[0.98] sm:w-auto"
+                  >
+                    Kumpels & Tippspiel
+                  </Link>
+                </div>
+              </>
+            ) : (
+              <>
+                <h2 className="text-3xl md:text-4xl font-bold text-fc-fg">Bereit für die Saison 2026/27?</h2>
+                <p className="mt-4 text-lg text-fc-fg/70 max-w-2xl mx-auto">
+                  Registriere dich kostenlos und verpasse kein Spiel, keine News und keine Aktion mehr.
+                </p>
+                <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
+                  <Link
+                    href="/register"
+                    className="inline-flex w-full items-center justify-center rounded-xl bg-fc-violet px-7 py-3 text-base font-semibold text-white shadow-sm shadow-fc-violet/20 transition-[background-color,box-shadow,transform] duration-200 hover:bg-fc-violet-dark hover:shadow-md hover:shadow-fc-violet/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg active:scale-[0.98] sm:w-auto"
+                  >
+                    Jetzt registrieren
+                  </Link>
+                  <Link
+                    href="/login"
+                    className="inline-flex w-full items-center justify-center rounded-xl border border-fc-violet/30 bg-fc-violet/10 px-7 py-3 text-base font-semibold text-fc-fg transition-[background-color,border-color,box-shadow,transform] duration-200 hover:border-fc-violet/45 hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg active:scale-[0.98] sm:w-auto"
+                  >
+                    Anmelden
+                  </Link>
+                </div>
+              </>
+            )}
           </div>
         </section>
       </main>
