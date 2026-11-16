@@ -22,11 +22,15 @@ function pointsLabel(points: number | null) {
   return { text: 'Noch offen', variant: 'outline' as const }
 }
 
-export default async function MeineTippsPage() {
+export default async function MeineTippsPage({ searchParams }: { searchParams: Promise<{ view?: string; result?: string }> }) {
   const session = await getServerSession()
   if (!session?.user?.id) redirect('/login?callbackUrl=/meine-tipps')
+  const { view = 'all', result = 'all' } = await searchParams
   const userId = session.user.id
   const now = new Date()
+
+  const viewFilter = view === 'open' || view === 'scored' ? view : 'all'
+  const resultFilter = result === 'exact' || result === 'tendency' || result === 'wrong' ? result : 'all'
 
   const tips = await prisma.tip.findMany({
     where: { userId },
@@ -39,15 +43,38 @@ export default async function MeineTippsPage() {
       },
     },
     orderBy: [{ match: { kickoff: 'desc' } }, { createdAt: 'desc' }],
-    take: 200,
+    take: 300,
   }).catch(() => [] as any[])
 
-  const scored = tips.filter((t) => t.points != null)
-  const open = tips.filter((t) => t.points == null)
-  const totalPoints = scored.reduce((sum, t) => sum + (t.points ?? 0), 0)
-  const exactCount = scored.filter((t) => t.points === 3).length
-  const tendencyCount = scored.filter((t) => t.points === 1 || t.points === 2).length
-  const avg = scored.length > 0 ? (totalPoints / scored.length).toFixed(2).replace('.', ',') : '0,00'
+  const scoredAll = tips.filter((t) => t.points != null)
+  const openAll = tips.filter((t) => t.points == null)
+  const totalPoints = scoredAll.reduce((sum, t) => sum + (t.points ?? 0), 0)
+  const exactCount = scoredAll.filter((t) => t.points === 3).length
+  const tendencyCount = scoredAll.filter((t) => t.points === 1 || t.points === 2).length
+  const wrongCount = scoredAll.filter((t) => t.points === 0).length
+  const avg = scoredAll.length > 0 ? (totalPoints / scoredAll.length).toFixed(2).replace('.', ',') : '0,00'
+
+  function matchesResultFilter(t: any) {
+    if (resultFilter === 'all') return true
+    if (t.points == null) return false
+    if (resultFilter === 'exact') return t.points === 3
+    if (resultFilter === 'tendency') return t.points === 1 || t.points === 2
+    if (resultFilter === 'wrong') return t.points === 0
+    return true
+  }
+
+  const open = viewFilter === 'scored' ? [] : openAll.filter((t) => resultFilter === 'all')
+  const scored = viewFilter === 'open' ? [] : scoredAll.filter(matchesResultFilter)
+
+  function buildHref(next: { view?: string; result?: string }) {
+    const params = new URLSearchParams()
+    const v = next.view ?? viewFilter
+    const r = next.result ?? resultFilter
+    if (v && v !== 'all') params.set('view', v)
+    if (r && r !== 'all') params.set('result', r)
+    const qs = params.toString()
+    return qs ? `/meine-tipps?${qs}` : '/meine-tipps'
+  }
 
   function TipRow({ t }: { t: (typeof tips)[number] }) {
     const m = t.match
@@ -126,7 +153,44 @@ export default async function MeineTippsPage() {
           <Card className="border-fc-border/70"><CardContent className="pt-5"><p className="text-sm text-fc-fg/60">Tipps gesamt</p><p className="mt-1 text-2xl font-bold tabular-nums text-fc-fg">{tips.length}</p></CardContent></Card>
           <Card className="border-fc-border/70"><CardContent className="pt-5"><p className="flex items-center gap-1.5 text-sm text-fc-fg/60"><Trophy className="h-4 w-4" aria-hidden="true" /> Punkte (ausgewertet)</p><p className="mt-1 text-2xl font-bold tabular-nums text-fc-fg">{totalPoints}</p><p className="text-xs text-fc-fg/55">Ø {avg} pro ausgewertetem Tipp</p></CardContent></Card>
           <Card className="border-fc-border/70"><CardContent className="pt-5"><p className="flex items-center gap-1.5 text-sm text-fc-fg/60"><Target className="h-4 w-4" aria-hidden="true" /> Exakt getroffen</p><p className="mt-1 text-2xl font-bold tabular-nums text-fc-fg">{exactCount}</p><p className="text-xs text-fc-fg/55">{tendencyCount}× richtige Tendenz (1/2 P)</p></CardContent></Card>
-          <Card className="border-fc-border/70"><CardContent className="pt-5"><p className="flex items-center gap-1.5 text-sm text-fc-fg/60"><CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Ausgewertet</p><p className="mt-1 text-2xl font-bold tabular-nums text-fc-fg">{scored.length}</p><p className="text-xs text-fc-fg/55">{open.length} offen/ausstehend</p></CardContent></Card>
+          <Card className="border-fc-border/70"><CardContent className="pt-5"><p className="flex items-center gap-1.5 text-sm text-fc-fg/60"><CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Ausgewertet</p><p className="mt-1 text-2xl font-bold tabular-nums text-fc-fg">{scoredAll.length}</p><p className="text-xs text-fc-fg/55">{openAll.length} offen/ausstehend · {wrongCount}× daneben</p></CardContent></Card>
+        </div>
+
+        <div className="mb-6 space-y-3">
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Ansicht filtern">
+            {([
+              { v: 'all', label: `Alle (${tips.length})` },
+              { v: 'open', label: `Offen (${openAll.length})` },
+              { v: 'scored', label: `Ausgewertet (${scoredAll.length})` },
+            ] as const).map((opt) => (
+              <Link
+                key={opt.v}
+                href={buildHref({ view: opt.v })}
+                className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg ${viewFilter === opt.v ? 'border-fc-violet/40 bg-fc-violet/15 text-fc-fg' : 'border-fc-border bg-fc-surface/40 text-fc-fg/75 hover:border-fc-violet/30'}`}
+                aria-current={viewFilter === opt.v ? 'page' : undefined}
+              >
+                {opt.label}
+              </Link>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Ergebnis filtern">
+            {([
+              { v: 'all', label: 'Alle Ergebnisse' },
+              { v: 'exact', label: `Exakt (${exactCount})` },
+              { v: 'tendency', label: `Tendenz (${tendencyCount})` },
+              { v: 'wrong', label: `Daneben (${wrongCount})` },
+            ] as const).map((opt) => (
+              <Link
+                key={opt.v}
+                href={buildHref({ result: opt.v })}
+                className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg ${resultFilter === opt.v ? 'border-fc-violet/40 bg-fc-violet/15 text-fc-fg' : 'border-fc-border bg-fc-surface/40 text-fc-fg/75 hover:border-fc-violet/30'}`}
+                aria-current={resultFilter === opt.v ? 'page' : undefined}
+              >
+                {opt.label}
+              </Link>
+            ))}
+          </div>
+          {resultFilter !== 'all' ? <p className="text-xs text-fc-fg/55">Ergebnisfilter gilt nur für ausgewertete Tipps.</p> : null}
         </div>
 
         {tips.length === 0 ? (
@@ -135,6 +199,14 @@ export default async function MeineTippsPage() {
               <p className="text-fc-fg/75">Du hast noch keine Tipps abgegeben.</p>
               <p className="mt-1 text-sm text-fc-fg/60">Tippe kommende Aue-Spiele und sammle Punkte (3/2/1/0-System).</p>
               <Link href="/tippspiel" className="mt-4 inline-flex"><Button>Zum Tippspiel</Button></Link>
+            </CardContent>
+          </Card>
+        ) : open.length === 0 && scored.length === 0 ? (
+          <Card className="border-fc-border/70">
+            <CardContent className="py-10 text-center">
+              <p className="text-fc-fg/75">Keine Tipps für diesen Filter gefunden.</p>
+              <p className="mt-1 text-sm text-fc-fg/60">Passe Ansicht oder Ergebnisfilter an, um mehr Einträge zu sehen.</p>
+              <Link href="/meine-tipps" className="mt-4 inline-flex"><Button variant="outline">Filter zurücksetzen</Button></Link>
             </CardContent>
           </Card>
         ) : (
@@ -150,18 +222,20 @@ export default async function MeineTippsPage() {
               </Card>
             ) : null}
 
-            <Card>
-              <CardHeader><CardTitle>Ausgewertet ({scored.length})</CardTitle></CardHeader>
-              <CardContent>
-                {scored.length === 0 ? (
-                  <p className="text-sm text-fc-fg/70">Noch keine ausgewerteten Tipps. Punkte erscheinen nach Spielende und Ergebnis-Sync.</p>
-                ) : (
-                  <ul className="space-y-3">
-                    {scored.map((t) => <TipRow key={t.id} t={t} />)}
-                  </ul>
-                )}
-              </CardContent>
-            </Card>
+            {viewFilter !== 'open' ? (
+              <Card>
+                <CardHeader><CardTitle>Ausgewertet ({scored.length})</CardTitle></CardHeader>
+                <CardContent>
+                  {scored.length === 0 ? (
+                    <p className="text-sm text-fc-fg/70">Keine ausgewerteten Tipps für diesen Filter. Passe den Ergebnisfilter an.</p>
+                  ) : (
+                    <ul className="space-y-3">
+                      {scored.map((t) => <TipRow key={t.id} t={t} />)}
+                    </ul>
+                  )}
+                </CardContent>
+              </Card>
+            ) : null}
           </div>
         )}
       </div>
