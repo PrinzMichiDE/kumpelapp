@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from '@/lib/auth-server'
 import { prisma } from '@kumpelapp/db'
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@kumpelapp/ui'
-import { Settings, Ticket, Users, Bell, Heart, LogOut, MapPinned } from 'lucide-react'
+import { Settings, Ticket, Users, Bell, Heart, LogOut, MapPinned, BarChart3, Brain, Trophy } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Profil',
@@ -16,14 +16,31 @@ export default async function ProfilPage() {
   if (!session?.user?.id) redirect('/login?callbackUrl=/profil')
 
   const userId = session.user.id
-  const [tipCount, groupCount, ticketCount, favCount, visitedVenueGroups] = await Promise.all([
+  const [tipCount, groupCount, ticketCount, favCount, visitedVenueGroups, tipAgg, scoredTipCount, exactTipCount, quizAttempts, attendanceCounts] = await Promise.all([
     prisma.tip.count({ where: { userId } }),
     prisma.groupMember.count({ where: { userId } }),
     prisma.ticket.count({ where: { userId } }),
     prisma.favorite.count({ where: { userId } }),
     prisma.venueVisit.groupBy({ by: ['venueId'], where: { userId } }),
+    prisma.tip.aggregate({ where: { userId, points: { not: null } }, _sum: { points: true } }),
+    prisma.tip.count({ where: { userId, points: { not: null } } }),
+    prisma.tip.count({ where: { userId, points: 3 } }),
+    prisma.quizAttempt.findMany({ where: { userId }, select: { correct: true }, orderBy: { createdAt: 'desc' } }),
+    prisma.attendance.groupBy({ by: ['status'], where: { userId }, _count: { _all: true } }),
   ])
   const visitedVenueCount = visitedVenueGroups.length
+  const totalTipPoints = tipAgg._sum.points ?? 0
+  const avgTipPoints = scoredTipCount > 0 ? (totalTipPoints / scoredTipCount).toFixed(2).replace('.', ',') : '0,00'
+  const quizTotal = quizAttempts.length
+  const quizCorrect = quizAttempts.filter((a) => a.correct).length
+  const quizAccuracy = quizTotal > 0 ? Math.round((quizCorrect / quizTotal) * 100) : 0
+  let quizStreak = 0
+  for (const a of quizAttempts) {
+    if (!a.correct) break
+    quizStreak += 1
+  }
+  const goingCount = attendanceCounts.find((r) => r.status === 'GOING')?._count._all ?? 0
+  const maybeCount = attendanceCounts.find((r) => r.status === 'MAYBE')?._count._all ?? 0
 
   return (
     <main id="main-content" className="flex-1">
@@ -48,31 +65,56 @@ export default async function ProfilPage() {
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <Card className="border-fc-border/70">
-            <CardHeader><CardTitle>Matchday & Community</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <QuickLink href="/kumpels" label="Kumpels & Gruppen" />
-              <QuickLink href="/tippspiel" label="Tippspiel (3/2/1/0)" />
-              <QuickLink href="/tickets" label="Tickets & Wallet" />
-              <QuickLink href="/auswaerts" label="Auswärts-Guide" />
-              <QuickLink href="/sammler" label="Stadion-Sammler" />
+            <CardHeader><CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Meine Bilanz</CardTitle></CardHeader>
+            <CardContent className="space-y-4 text-sm">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-fc-fg/55"><Trophy className="h-3.5 w-3.5" aria-hidden="true" /> Tippspiel</p>
+                  <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">{totalTipPoints} <span className="text-sm font-semibold text-fc-fg/60">Punkte</span></p>
+                  <p className="mt-0.5 text-xs text-fc-fg/65">{scoredTipCount} ausgewertet · {exactTipCount}× exakt · Ø {avgTipPoints}</p>
+                </div>
+                <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-fc-fg/55"><Brain className="h-3.5 w-3.5" aria-hidden="true" /> Quiz</p>
+                  <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">{quizAccuracy}% <span className="text-sm font-semibold text-fc-fg/60">Quote</span></p>
+                  <p className="mt-0.5 text-xs text-fc-fg/65">{quizCorrect}/{quizTotal} richtig · Serie {quizStreak}</p>
+                </div>
+              </div>
+              <div className="rounded-lg border border-fc-border/60 bg-fc-bg/25 p-3">
+                <p className="text-xs font-medium uppercase tracking-wide text-fc-fg/55">Matchday & Stadion</p>
+                <p className="mt-1 text-fc-fg/80"><span className="font-semibold text-fc-fg">{goingCount}</span> Zusagen{maybeCount > 0 ? <span> · <span className="font-semibold text-fc-fg">{maybeCount}</span> vielleicht</span> : null} · <span className="font-semibold text-fc-fg">{visitedVenueCount}</span> Stadien besucht</p>
+              </div>
+              <p className="text-xs text-fc-fg/55">Detaillierte Werte auch per API: <code className="rounded bg-fc-bg/40 px-1 py-0.5">GET /api/v1/me/stats</code></p>
             </CardContent>
           </Card>
-          <Card className="border-fc-border/70">
-            <CardHeader><CardTitle>Account</CardTitle></CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <QuickLink href="/profil/einstellungen" label="Benachrichtigungen & Privatsphäre" />
-              <QuickLink href="/quellen" label="Quellen & Lizenzen" />
-              <QuickLink href="/datenschutz" label="Datenschutz & Rechte" />
-              <form action="/api/auth/signout" method="post">
-                <button
-                  type="submit"
-                  className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-fc-loss transition-colors hover:bg-fc-loss/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-loss/70 focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
-                >
-                  <LogOut className="h-4 w-4" aria-hidden="true" /> Abmelden
-                </button>
-              </form>
-            </CardContent>
-          </Card>
+
+          <div className="space-y-4">
+            <Card className="border-fc-border/70">
+              <CardHeader><CardTitle>Matchday & Community</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <QuickLink href="/kumpels" label="Kumpels & Gruppen" />
+                <QuickLink href="/tippspiel" label="Tippspiel (3/2/1/0)" />
+                <QuickLink href="/tickets" label="Tickets & Wallet" />
+                <QuickLink href="/auswaerts" label="Auswärts-Guide" />
+                <QuickLink href="/sammler" label="Stadion-Sammler" />
+              </CardContent>
+            </Card>
+            <Card className="border-fc-border/70">
+              <CardHeader><CardTitle>Account</CardTitle></CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <QuickLink href="/profil/einstellungen" label="Benachrichtigungen & Privatsphäre" />
+                <QuickLink href="/quellen" label="Quellen & Lizenzen" />
+                <QuickLink href="/datenschutz" label="Datenschutz & Rechte" />
+                <form action="/api/auth/signout" method="post">
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-fc-loss transition-colors hover:bg-fc-loss/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-loss/70 focus-visible:ring-offset-2 focus-visible:ring-offset-fc-surface"
+                  >
+                    <LogOut className="h-4 w-4" aria-hidden="true" /> Abmelden
+                  </button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </main>
