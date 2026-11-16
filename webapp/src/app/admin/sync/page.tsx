@@ -93,6 +93,27 @@ export default function SyncAdminPage() {
     }
   }
 
+  const staleThresholdMs = (source: string) => {
+    if (source === 'openligadb') return 6 * 60 * 60 * 1000
+    if (['news', 'streams', 'tickets'].includes(source)) return 24 * 60 * 60 * 1000
+    if (['away-info'].includes(source)) return 30 * 24 * 60 * 60 * 1000
+    return 90 * 24 * 60 * 60 * 1000
+  }
+
+  const isStale = (job: SyncStatus) => {
+    if (!job.lastRun) return true
+    const ageMs = Date.now() - new Date(job.lastRun.createdAt).getTime()
+    return ageMs > staleThresholdMs(job.source)
+  }
+
+  const nextAction = (job: SyncStatus) => {
+    if (job.isRunning) return 'Läuft – Ergebnis abwarten.'
+    if (!job.lastRun) return 'Noch nie gelaufen: initial synchronisieren oder Seed/Ingest prüfen.'
+    if (!job.lastRun.ok) return 'Fehler: Logs/Runbook prüfen, Ursache beheben, gezielt neu synchronisieren.'
+    if (isStale(job)) return 'Veraltet: jetzt synchronisieren oder Daten manuell verifizieren.'
+    return 'OK: regelmäßige Prüfung beibehalten.'
+  }
+
   const getStatusBadge = (job: SyncStatus) => {
     if (job.isRunning)
       return (
@@ -101,13 +122,21 @@ export default function SyncAdminPage() {
         </Badge>
       )
     if (!job.lastRun) return <Badge variant="outline">Nie gelaufen</Badge>
-    return job.lastRun.ok ? (
+    if (!job.lastRun.ok)
+      return (
+        <Badge variant="destructive">
+          <AlertCircle className="mr-1 h-3 w-3" aria-hidden="true" /> Fehler
+        </Badge>
+      )
+    if (isStale(job))
+      return (
+        <Badge variant="warning">
+          <Clock className="mr-1 h-3 w-3" aria-hidden="true" /> Veraltet
+        </Badge>
+      )
+    return (
       <Badge variant="success">
         <CheckCircle className="mr-1 h-3 w-3" aria-hidden="true" /> OK
-      </Badge>
-    ) : (
-      <Badge variant="destructive">
-        <AlertCircle className="mr-1 h-3 w-3" aria-hidden="true" /> Fehler
       </Badge>
     )
   }
@@ -116,7 +145,14 @@ export default function SyncAdminPage() {
     <div className="p-4 pt-20 sm:p-6 lg:p-8 lg:pt-8">
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-fc-fg">Sync-Verwaltung</h1>
-        <p className="mt-2 text-fc-fg/70">Externe Datenquellen synchronisieren und Status überwachen</p>
+        <p className="mt-2 text-fc-fg/70">Externe Datenquellen synchronisieren, Stale-Zustände erkennen und nächste Aktionen ableiten (A3).</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-xl border border-fc-border/70 bg-fc-surface/40 p-3 text-sm"><p className="text-fc-fg/55">Fehler (letzter Lauf)</p><p className="mt-1 text-lg font-semibold text-fc-loss">{jobs.filter((j) => j.lastRun && !j.lastRun.ok).length}</p></div>
+          <div className="rounded-xl border border-fc-border/70 bg-fc-surface/40 p-3 text-sm"><p className="text-fc-fg/55">Veraltet</p><p className="mt-1 text-lg font-semibold text-fc-draw">{jobs.filter((j) => isStale(j)).length}</p></div>
+          <div className="rounded-xl border border-fc-border/70 bg-fc-surface/40 p-3 text-sm"><p className="text-fc-fg/55">Nie gelaufen</p><p className="mt-1 text-lg font-semibold text-fc-fg">{jobs.filter((j) => !j.lastRun).length}</p></div>
+          <div className="rounded-xl border border-fc-border/70 bg-fc-surface/40 p-3 text-sm"><p className="text-fc-fg/55">Gesund (ok & frisch)</p><p className="mt-1 text-lg font-semibold text-fc-win">{jobs.filter((j) => j.lastRun?.ok && !isStale(j)).length}</p></div>
+        </div>
+        <p className="mt-3 text-xs text-fc-fg/55">Stale-Schwellen (UI): OpenLigaDB &gt; 6h, News/Streams/Tickets &gt; 24h, Away-Info &gt; 30 Tage, Content-Quellen &gt; 90 Tage. Details/Playbooks: <code>docs/sync-runbook.md</code>, <code>docs/source-matrix-rlno-2026-27.md</code>.</p>
       </div>
 
       <div aria-live="polite" aria-atomic="true" className="mb-6 min-h-[1.5rem]">
@@ -165,6 +201,11 @@ export default function SyncAdminPage() {
                         <Clock className="h-4 w-4 shrink-0" aria-hidden="true" />
                         <span>Letzter Lauf: {formatDateTime(job.lastRun.createdAt)}</span>
                       </div>
+                      {isStale(job) && job.lastRun.ok ? (
+                        <div className="rounded-lg border border-fc-draw/30 bg-fc-draw/10 p-2 text-xs text-fc-fg/80">
+                          Datenstand evtl. veraltet – Sync empfohlen.
+                        </div>
+                      ) : null}
                       <div className="flex items-center gap-2 text-sm text-fc-fg/65">
                         <Zap className="h-4 w-4 shrink-0" aria-hidden="true" />
                         <span>Dauer: {job.lastRun.durationMs}ms</span>
@@ -182,11 +223,14 @@ export default function SyncAdminPage() {
                   ) : (
                     <p className="text-sm text-fc-fg/55">Noch nie synchronisiert</p>
                   )}
+                  <div className="rounded-lg border border-fc-violet/20 bg-fc-violet/5 p-2.5 text-xs text-fc-fg/75">
+                    <span className="font-medium text-fc-violet-light">Nächste Aktion:</span> {nextAction(job)}
+                  </div>
                   <Button
-                    className="mt-2 w-full"
+                    className="mt-1 w-full"
                     onClick={() => triggerSync(job.source)}
                     disabled={job.isRunning}
-                    variant={job.isRunning ? 'outline' : 'default'}
+                    variant={job.isRunning ? 'outline' : (!job.lastRun || !job.lastRun.ok || isStale(job)) ? 'default' : 'outline'}
                     aria-busy={job.isRunning}
                     aria-label={job.isRunning ? `${job.label} wird synchronisiert` : `${job.label} jetzt synchronisieren`}
                   >

@@ -22,6 +22,8 @@ import {
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cn } from '@kumpelapp/utils'
+import { DataMeta } from '@/components/data-meta'
+import { matchDataCapability } from '@/lib/data-freshness'
 
 export const dynamic = 'force-dynamic'
 
@@ -241,6 +243,7 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
     },
     { goals: 0, yellows: 0, reds: 0, subs: 0 },
   )
+  const capability = matchDataCapability({ status: match.status, hasEvents: events.length > 0, source: match.source, updatedAt: match.kickoff })
 
   const now = new Date()
   const countdown = countdownText(match.kickoff, now)
@@ -305,7 +308,24 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
             <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fc-fg/60">
               {countdown ? <span className="font-medium text-fc-violet-light">{countdown}</span> : <span>{statusLabel}</span>}
               <span>Gegner: {opponentName}</span>
-              {match.source ? <span>Quelle: {match.source}</span> : null}
+              {match.source ? <span>Quelle: {match.source}</span> : <span>Quelle: unbekannt</span>}
+            </div>
+            {match.editorNote ? (
+              <div className="mt-4 rounded-xl border border-fc-draw/30 bg-fc-draw/10 p-3 text-sm text-fc-fg/85">
+                <p className="font-medium text-fc-draw">Redaktioneller Hinweis / Korrektur</p>
+                <p className="mt-1">{match.editorNote}</p>
+              </div>
+            ) : null}
+            <div className="mt-4">
+              <DataMeta
+                source={match.source || 'Unbekannt / redaktionell'}
+                updatedAt={match.kickoff}
+                capabilityLabel={capability.label}
+                capabilityTone={capability.key === 'result_only' || capability.key === 'stale' ? 'warn' : capability.key === 'available' ? 'good' : 'info'}
+                manualLabel={match.editorNote ? 'Manuell geprüft/korrigiert möglich' : null}
+                note={`${capability.detail} Änderungen (Verlegung, Status, Ergebnis) sind möglich.`}
+                compact
+              />
             </div>
           </CardHeader>
           <CardContent className="p-6 sm:p-8">
@@ -441,9 +461,16 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                 </a>
               ) : null}
               <a
-                href="/api/v1/calendar/aue.ics"
+                href={`/api/v1/calendar/match/${match.id}`}
                 download
                 className="inline-flex items-center gap-1.5 rounded-lg border border-fc-violet/25 bg-fc-violet/10 px-3 py-2 text-sm font-medium text-fc-violet-light transition-[border-color,background-color,color,box-shadow] duration-200 hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+              >
+                <CalendarPlus className="h-4 w-4" aria-hidden="true" /> Dieses Spiel (.ics)
+              </a>
+              <a
+                href="/api/v1/calendar/aue.ics"
+                download
+                className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg transition-[border-color,background-color,color,box-shadow] duration-200 hover:border-fc-violet/40 hover:bg-fc-violet/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
               >
                 <CalendarPlus className="h-4 w-4" aria-hidden="true" /> Alle Termine (.ics)
               </a>
@@ -575,7 +602,7 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
             <CardHeader>
               <CardTitle className="text-lg">Spielereignisse</CardTitle>
               <p className="text-sm text-fc-fg/60">
-                {events.length} {events.length === 1 ? 'Ereignis' : 'Ereignisse'} im Verlauf
+                {events.length} {events.length === 1 ? 'Ereignis' : 'Ereignisse'} im Verlauf · Darstellung abhängig von der Datenquelle
               </p>
             </CardHeader>
             <CardContent>
@@ -609,8 +636,9 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
             <CardHeader>
               <CardTitle className="text-lg">Spielereignisse</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-fc-fg/60">Noch keine Ereignisse erfasst.</p>
+            <CardContent className="space-y-2 text-sm text-fc-fg/65">
+              <p>Keine detaillierten Live-Events verfügbar. Für dieses Spiel liegen aktuell nur Ergebnis-/Statusdaten oder unvollständige Ereignisdaten vor.</p>
+              <p className="text-fc-fg/55">Hinweis: RLNO-Datenquellen liefern nicht immer Karten/Wechsel/Torschützen in Echtzeit. Offizielle Kanäle können ergänzende Infos bieten.</p>
             </CardContent>
           </Card>
         ) : (
@@ -619,7 +647,7 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
               <CardTitle className="text-lg">Spielereignisse</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-fc-fg/60">Ereignisse werden bei Anpfiff bzw. nach Erfassung angezeigt.</p>
+              <p className="text-sm text-fc-fg/60">Ereignisse werden bei Anpfiff bzw. nach Erfassung angezeigt, sofern die Datenquelle sie liefert.</p>
             </CardContent>
           </Card>
         )}
@@ -655,10 +683,14 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
         ) : null}
         <Card className="mt-6 border-fc-border/70">
           <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm text-fc-fg/65">
-            <p>Daten können sich ändern. Quelle/Stand: {match.source || 'unbekannt'}.</p>
+            <div className="space-y-1">
+              <p>Daten können sich ändern (Verlegung, Korrektur, fehlende Live-Events). Quelle: <span className="text-fc-fg/85">{match.source || 'unbekannt'}</span>.</p>
+              <p className="text-xs text-fc-fg/55">Letzte Anzeigeaktualisierung: {new Date().toLocaleString('de-DE')} · Bei Abweichungen: <Link href="/quellen" className="text-fc-violet hover:underline">Quellen/Transparenz</Link> prüfen oder Korrektur über Admin/Redaktion anstoßen.</p>
+            </div>
             <div className="flex flex-wrap gap-3">
               <Link href="/quellen" className="text-fc-violet hover:underline">Quellen</Link>
-              <Link href="/profil/einstellungen" className="text-fc-violet hover:underline">Problem melden / Feedback</Link>
+              <a href={`mailto:redaktion@kumpelapp.de?subject=${encodeURIComponent(`Datenproblem Spiel ${match.id}`)}&body=${encodeURIComponent(`Spiel: ${match.homeTeam.name} – ${match.awayTeam.name}\nURL: /spiel/${match.id}\n\nWas stimmt nicht?\nQuelle/Referenz:\n`)}`} className="text-fc-violet hover:underline">Datenproblem melden</a>
+              <Link href="/admin/matches" className="text-fc-violet hover:underline">Admin-Korrektur</Link>
             </div>
           </CardContent>
         </Card>

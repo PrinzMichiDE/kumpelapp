@@ -1,7 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import { prisma } from '@kumpelapp/db'
 import { MatchStatus, EventType, TeamKind, ReviewStatus } from '@prisma/client'
-import { format } from 'date-fns'
+import { scoreTip } from '@kumpelapp/domain'
 
 const OPENLIGADB_BASE_URL = 'https://api.openligadb.de'
 const LEAGUE_SHORTCUT = 'rlno' // Regionalliga Nordost
@@ -155,9 +154,29 @@ async function upsertMatch(openLigaMatch: OpenLigaDBMatch, homeTeamId: string, a
 
     const existing = await prisma.match.findUnique({
       where: { externalId: String(openLigaMatch.matchId) },
+      select: {
+        id: true,
+        editorNote: true,
+        kickoff: true,
+        status: true,
+        homeGoals: true,
+        awayGoals: true,
+        halftimeHome: true,
+        halftimeAway: true,
+        venueId: true,
+        matchday: true,
+      },
     })
 
-    const matchData = {
+    const endResult = openLigaMatch.matchResults?.find((r) => r.resultTypeID === 2) ?? openLigaMatch.matchResults?.[0]
+    const homeGoals = openLigaMatch.matchIsFinished ? endResult?.pointsTeam1 ?? null : null
+    const awayGoals = openLigaMatch.matchIsFinished ? endResult?.pointsTeam2 ?? null : null
+    const halftime = openLigaMatch.matchResults?.find((r) => r.resultTypeID === 1)
+    const sourceStatus = openLigaMatch.matchIsFinished ? MatchStatus.FINISHED : MatchStatus.SCHEDULED
+
+    const hasManualOverride = Boolean(existing?.editorNote?.trim())
+
+    const baseData = {
       leagueId,
       externalId: String(openLigaMatch.matchId),
       source: 'openligadb',
@@ -166,22 +185,51 @@ async function upsertMatch(openLigaMatch: OpenLigaDBMatch, homeTeamId: string, a
       venueId,
       homeTeamId,
       awayTeamId,
-      homeGoals: openLigaMatch.matchIsFinished ? openLigaMatch.matchResults[0]?.pointsTeam1 ?? null : null,
-      awayGoals: openLigaMatch.matchIsFinished ? openLigaMatch.matchResults[0]?.pointsTeam2 ?? null : null,
-      status: openLigaMatch.matchIsFinished ? MatchStatus.FINISHED : MatchStatus.SCHEDULED,
+      homeGoals,
+      awayGoals,
+      halftimeHome: halftime?.pointsTeam1 ?? null,
+      halftimeAway: halftime?.pointsTeam2 ?? null,
+      status: sourceStatus,
     }
 
-    if (existing) {
-      await prisma.match.update({ where: { id: existing.id }, data: matchData })
-      result.updated++
-    } else {
-      await prisma.match.create({ data: matchData })
-      result.created++
-    }
+    // A4: verifizierte redaktionelle Korrekturen (editorNote) nicht still überschreiben.
+    // Auto-Sync aktualisiert weiterhin Zuordnung/Metadaten, erhält aber Kernfelder bei aktivem Override.
+    const matchData = !existing
+      ? baseData
+      : hasManualOverride
+        ? {
+            leagueId,
+            externalId: String(openLigaMatch.matchId),
+            source: 'openligadb',
+            homeTeamId,
+            awayTeamId,
+            // Kernfelder bewusst beibehalten
+            matchday: existing.matchday,
+            kickoff: existing.kickoff,
+            venueId: existing.venueId,
+            homeGoals: existing.homeGoals,
+            awayGoals: existing.awayGoals,
+            halftimeHome: existing.halftimeHome,
+            halftimeAway: existing.halftimeAway,
+            status: existing.status,
+          }
+        : baseData
 
-    // Sync events (goals, cards, etc.)
-    if (openLigaMatch.matchIsFinished && openLigaMatch.goals.length > 0) {
+    const saved = existing
+      ? await prisma.match.update({ where: { id: existing.id }, data: matchData })
+      : await prisma.match.create({ data: matchData })
+    if (existing) result.updated++
+    else result.created++
+
+    // Sync events (goals, cards, etc.) nur wenn keine manuelle Ergebnis-/Statuskorrektur aktiv ist,
+    // um inkonsistente Eventdaten bei Overrides zu vermeiden.
+    if (openLigaMatch.goals.length > 0 && !hasManualOverride) {
       await syncMatchEvents(openLigaMatch.matchId, openLigaMatch.goals)
+    }
+
+    // Evaluate tips when result is final (auch bei manuellem Override)
+    if (saved.status === MatchStatus.FINISHED && saved.homeGoals != null && saved.awayGoals != null) {
+      await evaluateTipsForMatch(saved.id, saved.homeGoals, saved.awayGoals)
     }
 
   } catch (error) {
@@ -198,18 +246,31 @@ async function syncMatchEvents(matchExternalId: number, goals: OpenLigaDBMatch['
   // Delete existing events to avoid duplicates
   await prisma.matchEvent.deleteMany({ where: { matchId: match.id } })
 
-  const events = goals.map(goal => ({
+  const events = goals.map((goal) => ({
     matchId: match.id,
     minute: goal.matchMinute,
     type: goal.isOwnGoal ? EventType.OWN_GOAL : goal.isPenalty ? EventType.PENALTY_GOAL : EventType.GOAL,
     side: goal.scoreTeam1 > goal.scoreTeam2 ? 'HOME' : 'AWAY',
     player: goal.goalGetterName,
-    text: `${goal.goalGetterName} ${goal.isPenalty ? '(Elfmeter)' : ''}${goal.isOwnGoal ? ' (Eigentor)' : ''}`,
+    text: `${goal.goalGetterName} ${goal.isPenalty ? '(Elfmeter)' : ''}${goal.isOwnGoal ? ' (Eigentor)' : ''}`.trim(),
   }))
 
   if (events.length > 0) {
     await prisma.matchEvent.createMany({ data: events })
   }
+}
+
+async function evaluateTipsForMatch(matchId: string, homeGoals: number, awayGoals: number): Promise<void> {
+  const tips = await prisma.tip.findMany({ where: { matchId } })
+  if (tips.length === 0) return
+  await Promise.all(
+    tips.map((tip) =>
+      prisma.tip.update({
+        where: { id: tip.id },
+        data: { points: scoreTip({ homeGoals: tip.homeGoals, awayGoals: tip.awayGoals }, { homeGoals, awayGoals }) },
+      }),
+    ),
+  )
 }
 
 async function upsertStanding(openLigaStanding: OpenLigaDBStanding, leagueId: string, teamId: string): Promise<void> {
@@ -243,10 +304,11 @@ async function upsertStanding(openLigaStanding: OpenLigaDBStanding, leagueId: st
 }
 
 export async function syncOpenLigaDB(season?: string): Promise<{ matches: SyncResult; standings: SyncResult; errors: string[] }> {
-  const targetSeason = season || format(new Date(), 'yyyy') // e.g., "2026"
+  const targetSeason = season || String(new Date().getFullYear()) // e.g., "2026"
   const allErrors: string[] = []
   let totalCreated = 0
   let totalUpdated = 0
+  const startedAt = Date.now()
 
   try {
     console.log(`Starting OpenLigaDB sync for ${LEAGUE_SHORTCUT} ${targetSeason}...`)
@@ -345,9 +407,9 @@ export async function syncOpenLigaDB(season?: string): Promise<{ matches: SyncRe
       data: {
         source: 'openligadb',
         ok: allErrors.length === 0,
-        durationMs: 0, // TODO: measure
+        durationMs: Date.now() - startedAt,
         items: totalCreated + totalUpdated,
-        message: `Matches: ${matchResults.created} new, ${matchResults.updated} updated. Standings: ${standingResults.updated} updated. Errors: ${allErrors.length}`,
+        message: `Saison ${targetSeason}: Matches ${matchResults.created} neu, ${matchResults.updated} aktualisiert. Tabelle ${standingResults.updated} aktualisiert. Fehler ${allErrors.length}.`,
       },
     })
 
@@ -357,6 +419,15 @@ export async function syncOpenLigaDB(season?: string): Promise<{ matches: SyncRe
   } catch (error) {
     console.error('OpenLigaDB sync failed:', error)
     allErrors.push(`Sync failed: ${error}`)
+    await prisma.sourceSyncLog.create({
+      data: {
+        source: 'openligadb',
+        ok: false,
+        durationMs: Date.now() - startedAt,
+        items: totalCreated + totalUpdated,
+        message: `Sync fehlgeschlagen (${targetSeason}): ${String(error).slice(0, 500)}`,
+      },
+    }).catch(() => null)
     return { matches: { created: 0, updated: 0, errors: allErrors }, standings: { created: 0, updated: 0, errors: [] }, errors: allErrors }
   }
 }
@@ -384,8 +455,7 @@ async function recalculateStandings(leagueId: string): Promise<void> {
 }
 
 export async function syncCurrentSeason(): Promise<void> {
-  const currentYear = format(new Date(), 'yyyy')
-  await syncOpenLigaDB(currentYear)
+  await syncOpenLigaDB(String(new Date().getFullYear()))
 }
 
 export async function syncSpecificSeason(season: string): Promise<void> {

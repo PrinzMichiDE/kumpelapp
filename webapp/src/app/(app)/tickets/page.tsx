@@ -57,7 +57,7 @@ export default async function TicketsPage() {
                 Import &amp; Parsen
               </Button>
             </form>
-            <p className="mt-3 text-xs text-fc-fg/55">Hinweise: Parser-Ergebnisse bitte prüfen/korrigieren. Barcodes/QR und sensible Daten werden datensparsam behandelt; Wallet-Generierung ist layout-/anbieterabhängig.</p>
+            <p className="mt-3 text-xs text-fc-fg/55">Hinweise: Parser-Ergebnisse bitte prüfen/korrigieren (Status: PENDING/PARSED/PARTIAL/FAILED). Barcodes/QR und sensible Daten werden datensparsam behandelt; Wallet-Generierung ist layout-/anbieterabhängig. Bei Fehlern Ticketdaten manuell abgleichen.</p>
           </CardContent>
         </Card>
 

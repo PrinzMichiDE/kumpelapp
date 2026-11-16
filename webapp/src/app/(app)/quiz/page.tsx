@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { QuizPlay } from './quiz-play'
+import { DataMeta } from '@/components/data-meta'
 
 export const metadata: Metadata = {
   title: 'Veilchen-Quiz',
@@ -15,6 +16,15 @@ export default function QuizPage() {
           <p className="mt-2 text-fc-fg/70">
             Teste dein Wissen über den FC Erzgebirge Aue. Melde dich an, um deine Ergebnisse zu speichern.
           </p>
+          <div className="mt-4">
+            <DataMeta
+              source="Kuratiertes Quiz-Set (Seeds/DB), Fragen reviewbedürftig"
+              reviewStatus="DRAFT"
+              capabilityLabel="Quiz-Antworten werden serverseitig geprüft"
+              capabilityTone="good"
+              note="Fragenbestand wird laufend auf Fakten, Kategorien und Duplikate geprüft. Fehler in Fragen bitte melden (Profil/Einstellungen/Feedback-Kanal)."
+            />
+          </div>
         </div>
         <QuizPlay />
       </div>

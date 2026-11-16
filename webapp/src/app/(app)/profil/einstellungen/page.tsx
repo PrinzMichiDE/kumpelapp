@@ -47,6 +47,7 @@ export default function EinstellungenPage() {
         <Card className="mt-8 border-fc-border/70">
           <CardHeader><CardTitle>Push-Benachrichtigungen</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
+            <p className="text-fc-fg/70">Kategorien, Ruhezeiten und Opt-in werden pro Account gespeichert. Test-Push/Diagnose-UI kann je nach Ausrollungsstand variieren; bei Problemen Token/Browser-Berechtigungen prüfen.</p>
             {([
               ['kickoff', 'Anstoß-Erinnerungen (z. B. 60/15 Min.)'],
               ['goal', 'Tore & wichtige Spielereignisse'],

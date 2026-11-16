@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { prisma } from '@kumpelapp/db'
 import { Card, CardContent } from '@kumpelapp/ui'
 import { ArrowRight, Brain, SearchX, Trophy, User, type LucideIcon } from 'lucide-react'
+import { DataMeta } from '@/components/data-meta'
 import { cn } from '@kumpelapp/utils'
 import { TodayInAueHistoryBanner, UpcomingAueMilestones } from '@/components/today-in-aue-history'
 import { TraditionExplorer } from './tradition-explorer'
@@ -106,6 +107,15 @@ export default async function TraditionPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight text-fc-fg md:text-4xl">Tradition &amp; Geschichte</h1>
           <p className="mt-2 text-fc-fg/70">80 Jahre FC Erzgebirge Aue – Titel, Legenden, Saisonhistorie &amp; Chronik</p>
+          <div className="mt-4">
+            <DataMeta
+              source="Kuratiert/redaktionell + Seeds/DB (Traditionsdaten)"
+              reviewStatus={titles.length || seasonRecords.length ? 'DRAFT' : 'AUTO'}
+              capabilityLabel="Traditionsinhalte kuratiert, Quellen/Attribution je Eintrag"
+              capabilityTone="info"
+              note="Wismut-Ära, Titel, Saisonhistorie und Chronik werden redaktionell gepflegt. Bei Ergänzungen/Korrekturen Quellen und Lizenzlage beachten."
+            />
+          </div>
         </div>
 
         <TodayInAueHistoryBanner />
