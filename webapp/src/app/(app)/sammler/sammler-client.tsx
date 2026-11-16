@@ -33,6 +33,8 @@ export function SammlerClient({
   const [visits, setVisits] = useState<VisitRow[]>(initialVisits)
   const [pendingVenueId, setPendingVenueId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState<'all' | 'visited' | 'open'>('all')
 
   const visitsByVenue = useMemo(() => {
     const map = new Map<string, VisitRow[]>()
@@ -92,6 +94,22 @@ export function SammlerClient({
   const total = venues.length
   const pct = total > 0 ? Math.round((uniqueVisited / total) * 100) : 0
 
+  const filteredVenues = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return venues.filter((venue) => {
+      const visited = (visitsByVenue.get(venue.id)?.length ?? 0) > 0
+      if (filter === 'visited' && !visited) return false
+      if (filter === 'open' && visited) return false
+      if (q) {
+        const hay = `${venue.name} ${venue.city}`.toLowerCase()
+        if (!hay.includes(q)) return false
+      }
+      return true
+    })
+  }, [venues, visitsByVenue, query, filter])
+
+  const openCount = Math.max(0, total - uniqueVisited)
+
   return (
     <div className="space-y-6">
       <Card className="border-fc-violet/25 bg-gradient-to-r from-fc-violet/[0.10] via-fc-surface/60 to-fc-surface/40">
@@ -123,8 +141,55 @@ export function SammlerClient({
         </CardContent>
       </Card>
 
+      <Card className="border-fc-border/70">
+        <CardContent className="py-4 sm:py-5">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+              <label htmlFor="sammler-search" className="sr-only">Stadion oder Stadt suchen</label>
+              <input
+                id="sammler-search"
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Stadion oder Stadt suchen…"
+                className="w-full rounded-lg border border-fc-border bg-fc-surface/60 px-3 py-2 text-sm text-fc-fg placeholder:text-fc-fg/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet sm:w-72"
+              />
+              <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Sammlung filtern">
+                {([
+                  { v: 'all', label: `Alle (${total})` },
+                  { v: 'visited', label: `Besucht (${uniqueVisited})` },
+                  { v: 'open', label: `Offen (${openCount})` },
+                ] as const).map((opt) => (
+                  <button
+                    key={opt.v}
+                    type="button"
+                    onClick={() => setFilter(opt.v)}
+                    className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg ${filter === opt.v ? 'border-fc-violet/40 bg-fc-violet/15 text-fc-fg' : 'border-fc-border bg-fc-surface/40 text-fc-fg/75 hover:border-fc-violet/30'}`}
+                    aria-pressed={filter === opt.v}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <p className="text-sm text-fc-fg/60" aria-live="polite">
+              {filteredVenues.length} von {total} Stadien angezeigt
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {filteredVenues.length === 0 ? (
+        <Card className="border-fc-border/70">
+          <CardContent className="py-10 text-center">
+            <p className="text-fc-fg/75">Keine Stadien für diesen Filter gefunden.</p>
+            <p className="mt-1 text-sm text-fc-fg/60">Passe Suche oder Filter an.</p>
+            <Button type="button" variant="outline" className="mt-4" onClick={() => { setQuery(''); setFilter('all') }}>Filter zurücksetzen</Button>
+          </CardContent>
+        </Card>
+      ) : (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {venues.map((venue) => {
+        {filteredVenues.map((venue) => {
           const venueVisits = visitsByVenue.get(venue.id) ?? []
           const visited = venueVisits.length > 0
           const latest = venueVisits[0]
@@ -190,6 +255,7 @@ export function SammlerClient({
           )
         })}
       </div>
+      )}
     </div>
   )
 }
