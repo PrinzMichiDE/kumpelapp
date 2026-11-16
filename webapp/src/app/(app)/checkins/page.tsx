@@ -20,14 +20,18 @@ const statusMeta = {
   NOT_GOING: { label: 'Nicht dabei', icon: XCircle, className: 'border-fc-loss/30 bg-fc-loss/10 text-fc-loss' },
 } as const
 
-export default async function CheckinsPage() {
+export default async function CheckinsPage({ searchParams }: { searchParams: Promise<{ status?: string; when?: string }> }) {
   const session = await getServerSession()
   if (!session?.user?.id) redirect('/login?callbackUrl=/checkins')
+  const { status = 'all', when = 'all' } = await searchParams
 
   const userId = session.user.id
   const now = new Date()
 
-  const rows = await prisma.attendance.findMany({
+  const statusFilter = status === 'GOING' || status === 'MAYBE' || status === 'NOT_GOING' ? status : 'all'
+  const whenFilter = when === 'upcoming' || when === 'past' ? when : 'all'
+
+  const allRows = await prisma.attendance.findMany({
     where: { userId },
     include: {
       match: {
@@ -39,13 +43,33 @@ export default async function CheckinsPage() {
       },
     },
     orderBy: [{ match: { kickoff: 'desc' } }],
-    take: 100,
-  }).catch(() => [])
+    take: 200,
+  }).catch(() => [] as any[])
 
-  const upcoming = rows
-    .filter((r) => r.match.kickoff >= new Date(now.getTime() - 3 * 60 * 60 * 1000))
-    .sort((a, b) => +a.match.kickoff - +b.match.kickoff)
-  const past = rows.filter((r) => r.match.kickoff < new Date(now.getTime() - 3 * 60 * 60 * 1000))
+  const cutoff = new Date(now.getTime() - 3 * 60 * 60 * 1000)
+  const counts = {
+    all: allRows.length,
+    GOING: allRows.filter((r) => r.status === 'GOING').length,
+    MAYBE: allRows.filter((r) => r.status === 'MAYBE').length,
+    NOT_GOING: allRows.filter((r) => r.status === 'NOT_GOING').length,
+  }
+
+  const rows = statusFilter === 'all' ? allRows : allRows.filter((r) => r.status === statusFilter)
+  const allUpcoming = rows.filter((r) => r.match.kickoff >= cutoff).sort((a, b) => +a.match.kickoff - +b.match.kickoff)
+  const allPast = rows.filter((r) => r.match.kickoff < cutoff)
+
+  const upcoming = whenFilter === 'past' ? [] : allUpcoming
+  const past = whenFilter === 'upcoming' ? [] : allPast
+
+  function buildHref(next: { status?: string; when?: string }) {
+    const params = new URLSearchParams()
+    const s = next.status ?? statusFilter
+    const w = next.when ?? whenFilter
+    if (s && s !== 'all') params.set('status', s)
+    if (w && w !== 'all') params.set('when', w)
+    const qs = params.toString()
+    return qs ? `/checkins?${qs}` : '/checkins'
+  }
 
   function renderList(items: typeof rows, empty: string) {
     if (items.length === 0) return <p className="text-sm text-fc-fg/70">{empty}</p>
@@ -110,15 +134,55 @@ export default async function CheckinsPage() {
           </Link>
         </div>
 
+        <div className="mb-6 space-y-3">
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Zeitraum filtern">
+            {([
+              { v: 'all', label: 'Alle' },
+              { v: 'upcoming', label: 'Kommende' },
+              { v: 'past', label: 'Vergangene' },
+            ] as const).map((opt) => (
+              <Link
+                key={opt.v}
+                href={buildHref({ when: opt.v })}
+                className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg ${whenFilter === opt.v ? 'border-fc-violet/40 bg-fc-violet/15 text-fc-fg' : 'border-fc-border bg-fc-surface/40 text-fc-fg/75 hover:border-fc-violet/30'}`}
+                aria-current={whenFilter === opt.v ? 'page' : undefined}
+              >
+                {opt.label}
+              </Link>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Status filtern">
+            {([
+              { v: 'all', label: `Alle (${counts.all})` },
+              { v: 'GOING', label: `Dabei (${counts.GOING})` },
+              { v: 'MAYBE', label: `Vielleicht (${counts.MAYBE})` },
+              { v: 'NOT_GOING', label: `Nicht dabei (${counts.NOT_GOING})` },
+            ] as const).map((opt) => (
+              <Link
+                key={opt.v}
+                href={buildHref({ status: opt.v })}
+                className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg ${statusFilter === opt.v ? 'border-fc-violet/40 bg-fc-violet/15 text-fc-fg' : 'border-fc-border bg-fc-surface/40 text-fc-fg/75 hover:border-fc-violet/30'}`}
+                aria-current={statusFilter === opt.v ? 'page' : undefined}
+              >
+                {opt.label}
+              </Link>
+            ))}
+          </div>
+        </div>
+
         <div className="space-y-6">
-          <Card>
-            <CardHeader><CardTitle>Kommende Spiele</CardTitle></CardHeader>
-            <CardContent>{renderList(upcoming, 'Keine kommenden Check-ins. Öffne ein Spiel und setze deinen Status unter „Wer ist dabei?“')}</CardContent>
-          </Card>
-          <Card>
-            <CardHeader><CardTitle>Vergangene Spiele</CardTitle></CardHeader>
-            <CardContent>{renderList(past, 'Noch keine vergangenen Check-ins gespeichert.')}</CardContent>
-          </Card>
+          {whenFilter !== 'past' ? (
+            <Card>
+              <CardHeader><CardTitle>Kommende Spiele ({upcoming.length})</CardTitle></CardHeader>
+              <CardContent>{renderList(upcoming, 'Keine kommenden Check-ins für diesen Filter. Öffne ein Spiel und setze deinen Status unter „Wer ist dabei?“')}</CardContent>
+            </Card>
+          ) : null}
+          {whenFilter !== 'upcoming' ? (
+            <Card>
+              <CardHeader><CardTitle>Vergangene Spiele ({past.length})</CardTitle></CardHeader>
+              <CardContent>{renderList(past, 'Keine vergangenen Check-ins für diesen Filter.')}</CardContent>
+            </Card>
+          ) : null}
         </div>
       </div>
     </div>
