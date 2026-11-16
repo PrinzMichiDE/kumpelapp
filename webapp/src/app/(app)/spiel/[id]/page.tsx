@@ -263,8 +263,9 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
     counts: { GOING: 0, MAYBE: 0, NOT_GOING: 0, total: 0 },
     myStatus: null,
   }
+  let matchRides: { id: string; kind: string; fromPlace: string; departAt: Date; seats: number | null; note: string | null; user: { name: string | null } | null }[] = []
   try {
-    const [groups, totalVotes, myVote, attendanceGroups, myAttendance] = await Promise.all([
+    const [groups, totalVotes, myVote, attendanceGroups, myAttendance, rides] = await Promise.all([
       prisma.matchVote.groupBy({
         by: ['playerId'],
         where: { matchId: match.id },
@@ -280,7 +281,14 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
       session?.user?.id
         ? prisma.attendance.findUnique({ where: { userId_matchId: { userId: session.user.id, matchId: match.id } }, select: { status: true } })
         : Promise.resolve(null),
+      prisma.ride.findMany({
+        where: { matchId: match.id, departAt: { gte: new Date(Date.now() - 6 * 60 * 60 * 1000) } },
+        include: { user: { select: { name: true } } },
+        orderBy: { departAt: 'asc' },
+        take: 8,
+      }).catch(() => []),
     ])
+    matchRides = rides as any
     myVotePlayerId = myVote?.playerId ?? null
     const ids = groups.map((g) => g.playerId)
     const players = ids.length
@@ -752,6 +760,41 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
           initialMyPlayerId={myVotePlayerId}
           isAuthenticated={!!session?.user?.id}
         />
+
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Mitfahrten zu diesem Spiel</CardTitle>
+            <p className="text-sm text-fc-fg/60">Angebote und Gesuche für die An-/Abreise. Weitere Einträge und Details in der Mitfahrbörse.</p>
+          </CardHeader>
+          <CardContent>
+            {matchRides.length > 0 ? (
+              <ul className="space-y-2">
+                {matchRides.map((r) => (
+                  <li key={r.id} className="rounded-lg border border-fc-border/70 bg-fc-surface/40 px-4 py-3 text-sm">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant={r.kind === 'OFFER' ? 'secondary' : 'outline'}>{r.kind === 'OFFER' ? 'Angebot' : 'Gesuch'}</Badge>
+                      <span className="font-medium text-fc-fg">{r.fromPlace}</span>
+                      <span className="text-fc-fg/60">· {formatDate(r.departAt.toISOString ? r.departAt.toISOString() : String(r.departAt))} {formatKickoff(r.departAt.toISOString ? r.departAt.toISOString() : String(r.departAt))} Uhr</span>
+                    </div>
+                    <p className="mt-1 text-fc-fg/70">{r.seats ? `${r.seats} Plätze` : 'Plätze n/a'} · von {r.user?.name || 'Fan'}</p>
+                    {r.note ? <p className="mt-1 text-fc-fg/60">{r.note}</p> : null}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-fc-fg/65">Aktuell keine kommenden Mitfahrten für dieses Spiel eingetragen.</p>
+            )}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href="/kumpels/mitfahrten"
+                className="inline-flex items-center gap-1.5 rounded-lg border border-fc-violet/25 bg-fc-violet/10 px-3 py-2 text-sm font-medium text-fc-fg transition-colors hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+              >
+                Zur Mitfahrbörse
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
         <Card className="mt-6 border-fc-border/70">
           <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4 text-sm text-fc-fg/65">
             <div className="space-y-1">
