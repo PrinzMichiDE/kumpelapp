@@ -93,7 +93,7 @@ export function MatchAttendance({
   }
 
   return (
-    <Card className="mt-6">
+    <Card id="match-attendance" className="mt-6 scroll-mt-24">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Users className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Wer ist dabei?

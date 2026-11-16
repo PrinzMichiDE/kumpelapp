@@ -258,6 +258,7 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
 
   const session = await getServerSession()
   let myVotePlayerId: string | null = null
+  let myTip: { homeGoals: number; awayGoals: number; points: number | null } | null = null
   let voteResults: { totalVotes: number; top: { playerId: string; votes: number; share: number; player: { id: string; name: string; number: number | null; position: string } | null }[] } = { totalVotes: 0, top: [] }
   let attendanceSummary: { counts: { GOING: number; MAYBE: number; NOT_GOING: number; total: number }; myStatus: 'GOING' | 'MAYBE' | 'NOT_GOING' | null } = {
     counts: { GOING: 0, MAYBE: 0, NOT_GOING: 0, total: 0 },
@@ -265,7 +266,7 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
   }
   let matchRides: { id: string; kind: string; fromPlace: string; departAt: Date; seats: number | null; note: string | null; user: { name: string | null } | null }[] = []
   try {
-    const [groups, totalVotes, myVote, attendanceGroups, myAttendance, rides] = await Promise.all([
+    const [groups, totalVotes, myVote, attendanceGroups, myAttendance, rides, myTipRow] = await Promise.all([
       prisma.matchVote.groupBy({
         by: ['playerId'],
         where: { matchId: match.id },
@@ -287,7 +288,11 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
         orderBy: { departAt: 'asc' },
         take: 8,
       }).catch(() => []),
+      session?.user?.id
+        ? prisma.tip.findUnique({ where: { userId_matchId: { userId: session.user.id, matchId: match.id } }, select: { homeGoals: true, awayGoals: true, points: true } })
+        : Promise.resolve(null),
     ])
+    myTip = myTipRow ? { homeGoals: myTipRow.homeGoals, awayGoals: myTipRow.awayGoals, points: myTipRow.points } : null
     matchRides = rides as any
     myVotePlayerId = myVote?.playerId ?? null
     const ids = groups.map((g) => g.playerId)
@@ -453,6 +458,56 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
             ) : null}
           </CardContent>
         </Card>
+
+        {session?.user?.id ? (
+          <Card className="mt-6 border-fc-violet/25 bg-fc-violet/[0.04]">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <CheckCircle className="h-5 w-5 text-fc-violet" aria-hidden="true" /> Dein Status für dieses Spiel
+              </CardTitle>
+              <p className="text-sm text-fc-fg/65">Schnellüberblick: Tipp, Check-in und nächste Aktionen.</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-fc-border/70 bg-fc-surface/40 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-fc-fg/55">Mein Tipp</p>
+                  {myTip ? (
+                    <>
+                      <p className="mt-1 text-xl font-bold tabular-nums text-fc-fg">{myTip.homeGoals}:{myTip.awayGoals}</p>
+                      <p className="mt-1 text-sm text-fc-fg/65">
+                        {myTip.points == null ? 'Auswertung ausstehend' : `${myTip.points} Punkt${myTip.points === 1 ? '' : 'e'} erzielt`}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="mt-1 text-sm text-fc-fg/70">Noch kein Tipp abgegeben.</p>
+                  )}
+                  <Link href="/tippspiel" className="mt-3 inline-flex items-center rounded-lg border border-fc-border bg-fc-bg/30 px-3 py-2 text-sm font-medium text-fc-fg transition-colors hover:border-fc-violet/40 hover:bg-fc-violet/10">
+                    {myTip ? 'Tipp ansehen/ändern' : 'Jetzt tippen'}
+                  </Link>
+                </div>
+                <div className="rounded-xl border border-fc-border/70 bg-fc-surface/40 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-fc-fg/55">Mein Check-in</p>
+                  <p className="mt-1 text-sm font-medium text-fc-fg">
+                    {attendanceSummary.myStatus === 'GOING'
+                      ? 'Dabei'
+                      : attendanceSummary.myStatus === 'MAYBE'
+                        ? 'Vielleicht'
+                        : attendanceSummary.myStatus === 'NOT_GOING'
+                          ? 'Nicht dabei'
+                          : 'Noch kein Status gesetzt'}
+                  </p>
+                  <p className="mt-1 text-sm text-fc-fg/65">
+                    Community: <span className="font-semibold text-fc-win">{attendanceSummary.counts.GOING}</span> dabei
+                    {attendanceSummary.counts.MAYBE > 0 ? <span className="text-fc-fg/55"> · {attendanceSummary.counts.MAYBE} vielleicht</span> : null}
+                  </p>
+                  <a href="#match-attendance" className="mt-3 inline-flex items-center rounded-lg border border-fc-border bg-fc-bg/30 px-3 py-2 text-sm font-medium text-fc-fg transition-colors hover:border-fc-violet/40 hover:bg-fc-violet/10">
+                    Check-in setzen/ändern
+                  </a>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
 
         <Card className="mt-6 border-fc-violet/25 bg-gradient-to-b from-fc-violet/[0.07] to-card">
           <CardHeader className="pb-3">
