@@ -24,10 +24,14 @@ function positionLabel(pos: string) {
   }
 }
 
-export default async function MeineStimmenPage() {
+export default async function MeineStimmenPage({ searchParams }: { searchParams: Promise<{ q?: string; when?: string }> }) {
   const session = await getServerSession()
   if (!session?.user?.id) redirect('/login?callbackUrl=/meine-stimmen')
+  const { q = '', when = 'all' } = await searchParams
   const userId = session.user.id
+  const query = q.trim()
+  const whenFilter = when === 'upcoming' || when === 'past' ? when : 'all'
+  const now = new Date()
 
   const votes = await prisma.matchVote.findMany({
     where: { userId },
@@ -44,7 +48,7 @@ export default async function MeineStimmenPage() {
       },
     },
     orderBy: [{ createdAt: 'desc' }],
-    take: 200,
+    take: 300,
   }).catch(() => [] as any[])
 
   const byPlayer = new Map<string, { name: string; number: number | null; count: number }>()
@@ -56,6 +60,27 @@ export default async function MeineStimmenPage() {
     else byPlayer.set(p.id, { name: p.name, number: p.number, count: 1 })
   }
   const topPlayers = Array.from(byPlayer.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'de')).slice(0, 5)
+
+  const cutoff = new Date(now.getTime() - 3 * 60 * 60 * 1000)
+  const filteredVotes = votes.filter((v) => {
+    if (query) {
+      const name = v.player?.name?.toLowerCase() || ''
+      if (!name.includes(query.toLowerCase())) return false
+    }
+    if (whenFilter === 'upcoming') return v.match ? v.match.kickoff >= cutoff : false
+    if (whenFilter === 'past') return v.match ? v.match.kickoff < cutoff : true
+    return true
+  })
+
+  function buildHref(next: { q?: string; when?: string }) {
+    const params = new URLSearchParams()
+    const nq = next.q ?? query
+    const nw = next.when ?? whenFilter
+    if (nq) params.set('q', nq)
+    if (nw && nw !== 'all') params.set('when', nw)
+    const qs = params.toString()
+    return qs ? `/meine-stimmen?${qs}` : '/meine-stimmen'
+  }
 
   return (
     <main id="main-content" className="flex-1">
@@ -108,17 +133,64 @@ export default async function MeineStimmenPage() {
         </div>
 
         <Card>
-          <CardHeader><CardTitle>Stimmen-Verlauf</CardTitle></CardHeader>
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle>Stimmen-Verlauf ({filteredVotes.length}{filteredVotes.length !== votes.length ? ` / ${votes.length}` : ''})</CardTitle>
+            </div>
+          </CardHeader>
           <CardContent>
+            {votes.length > 0 ? (
+              <div className="mb-4 space-y-3">
+                <form action="/meine-stimmen" method="get" className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  {whenFilter !== 'all' ? <input type="hidden" name="when" value={whenFilter} /> : null}
+                  <label htmlFor="stimmen-q" className="sr-only">Spieler suchen</label>
+                  <input
+                    id="stimmen-q"
+                    name="q"
+                    defaultValue={query}
+                    placeholder="Spielername suchen…"
+                    className="w-full rounded-lg border border-fc-border bg-fc-surface/60 px-3 py-2 text-sm text-fc-fg placeholder:text-fc-fg/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet sm:max-w-xs"
+                  />
+                  <div className="flex gap-2">
+                    <Button type="submit" variant="outline" size="sm">Suchen</Button>
+                    {query || whenFilter !== 'all' ? (
+                      <Link href="/meine-stimmen" className="inline-flex items-center rounded-lg border border-fc-border px-3 py-2 text-sm font-medium text-fc-fg/80 hover:border-fc-violet/40 hover:bg-fc-violet/10">Zurücksetzen</Link>
+                    ) : null}
+                  </div>
+                </form>
+                <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Zeitraum filtern">
+                  {([
+                    { v: 'all', label: 'Alle' },
+                    { v: 'upcoming', label: 'Kommende' },
+                    { v: 'past', label: 'Vergangene' },
+                  ] as const).map((opt) => (
+                    <Link
+                      key={opt.v}
+                      href={buildHref({ when: opt.v })}
+                      className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg ${whenFilter === opt.v ? 'border-fc-violet/40 bg-fc-violet/15 text-fc-fg' : 'border-fc-border bg-fc-surface/40 text-fc-fg/75 hover:border-fc-violet/30'}`}
+                      aria-current={whenFilter === opt.v ? 'page' : undefined}
+                    >
+                      {opt.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {votes.length === 0 ? (
               <div className="py-6 text-center">
                 <p className="text-fc-fg/75">Du hast noch keine Stimmen abgegeben.</p>
                 <p className="mt-1 text-sm text-fc-fg/60">Wähle auf einer Spieldetailseite deinen Spieler des Spiels.</p>
                 <Link href="/spielplan" className="mt-4 inline-flex"><Button variant="outline">Zum Spielplan</Button></Link>
               </div>
+            ) : filteredVotes.length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-fc-fg/75">Keine Stimmen für diesen Filter gefunden.</p>
+                <p className="mt-1 text-sm text-fc-fg/60">Passe Suche oder Zeitraum an.</p>
+              </div>
             ) : (
               <ul className="space-y-3">
-                {votes.map((v) => {
+                {filteredVotes.map((v) => {
                   const m = v.match
                   const label = m ? `${m.homeTeam.shortName || m.homeTeam.name} – ${m.awayTeam.shortName || m.awayTeam.name}` : 'Spiel'
                   return (
