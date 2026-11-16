@@ -6,6 +6,7 @@ import { cn } from '@kumpelapp/utils'
 import { ArrowLeft, Calendar, Car, ExternalLink, Globe, MapPin, Navigation, Train } from 'lucide-react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { DataMeta, ReviewStatusBadge } from '@/components/data-meta'
 
 export const dynamic = 'force-dynamic'
 
@@ -124,22 +125,29 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-        <Link
-          href="/auswaerts"
-          className="mb-6 inline-flex items-center gap-2 rounded-lg text-sm font-medium text-fc-fg/70 transition-colors hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
-        >
-          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-          Zurück zum Auswärts-Guide
-        </Link>
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <Link
+            href="/auswaerts"
+            className="inline-flex items-center gap-2 rounded-lg text-sm font-medium text-fc-fg/70 transition-colors hover:text-fc-fg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+          >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            Zurück zum Auswärts-Guide
+          </Link>
+          <Link
+            href="/sammler"
+            className="inline-flex items-center justify-center rounded-xl border border-fc-violet/30 bg-fc-violet/10 px-4 py-2 text-sm font-semibold text-fc-fg transition-colors hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+          >
+            Im Stadion-Sammler erfassen
+          </Link>
+        </div>
 
         <Card className="overflow-hidden">
           <CardHeader className="border-b border-fc-border/70 bg-fc-surface/50">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="mb-2 flex flex-wrap items-center gap-2">
-                  <span className={cn('inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium', status.className)}>
-                    {status.label}
-                  </span>
+                  <ReviewStatusBadge status={venue.reviewStatus} />
+                  {venue.distanceKm ? <Badge variant="outline">~{venue.distanceKm} km ab Aue</Badge> : null}
                 </div>
                 <CardTitle className="text-2xl sm:text-3xl">{venue.name}</CardTitle>
                 <p className="mt-2 flex items-center gap-2 text-fc-fg/70">
@@ -305,15 +313,17 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
           </Card>
         ) : null}
 
-        {venue.source || venue.attribution ? (
-          <aside className="mt-6 rounded-xl border border-fc-border/80 bg-fc-surface/60 p-5 text-sm text-fc-fg/65">
-            <p className="font-medium text-fc-fg">Quellenhinweis</p>
-            <div className="mt-1 space-y-1">
-              {venue.source ? <p>Quelle: {venue.source}</p> : null}
-              {venue.attribution ? <p>{venue.attribution}</p> : null}
-            </div>
-          </aside>
-        ) : null}
+        <div className="mt-6">
+          <DataMeta
+            source={venue.source || null}
+            updatedAt={venue.fetchedAt || null}
+            reviewStatus={venue.reviewStatus}
+            stale={venue.reviewStatus !== 'CHECKED'}
+            staleLabel={venue.reviewStatus === 'CHECKED' ? undefined : 'Angaben ungeprüft/teilweise automatisch – vor Fahrt verifizieren'}
+            note={[venue.attribution, 'Angaben (Gästeblock, Einlass, Parken, ÖPNV) können sich kurzfristig ändern. Offizielle Faninfos des Heimvereins prüfen.'].filter(Boolean).join(' · ')}
+          />
+          <p className="mt-2 text-xs text-fc-fg/55">Fehler oder veraltete Infos? Bitte über Profil/Einstellungen oder Redaktion melden, damit ein Override möglich ist.</p>
+        </div>
       </div>
     </div>
   )

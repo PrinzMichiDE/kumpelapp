@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { getServerSession } from '@/lib/auth-server'
 import { prisma } from '@kumpelapp/db'
 import { Card, CardContent, CardHeader, CardTitle, Button } from '@kumpelapp/ui'
-import { Settings, Ticket, Users, Bell, Heart, LogOut } from 'lucide-react'
+import { Settings, Ticket, Users, Bell, Heart, LogOut, MapPinned } from 'lucide-react'
 
 export const metadata: Metadata = {
   title: 'Profil',
@@ -16,12 +16,14 @@ export default async function ProfilPage() {
   if (!session?.user?.id) redirect('/login?callbackUrl=/profil')
 
   const userId = session.user.id
-  const [tipCount, groupCount, ticketCount, favCount] = await Promise.all([
+  const [tipCount, groupCount, ticketCount, favCount, visitedVenueGroups] = await Promise.all([
     prisma.tip.count({ where: { userId } }),
     prisma.groupMember.count({ where: { userId } }),
     prisma.ticket.count({ where: { userId } }),
     prisma.favorite.count({ where: { userId } }),
+    prisma.venueVisit.groupBy({ by: ['venueId'], where: { userId } }),
   ])
+  const visitedVenueCount = visitedVenueGroups.length
 
   return (
     <main id="main-content" className="flex-1">
@@ -36,11 +38,12 @@ export default async function ProfilPage() {
           </Link>
         </div>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Stat label="Tipps abgegeben" value={String(tipCount)} icon={Users} href="/tippspiel" />
           <Stat label="Gruppen" value={String(groupCount)} icon={Users} href="/kumpels" />
           <Stat label="Tickets" value={String(ticketCount)} icon={Ticket} href="/tickets" />
           <Stat label="Favoriten" value={String(favCount)} icon={Heart} href="/profil/einstellungen" />
+          <Stat label="Stadien besucht" value={String(visitedVenueCount)} icon={MapPinned} href="/sammler" />
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
