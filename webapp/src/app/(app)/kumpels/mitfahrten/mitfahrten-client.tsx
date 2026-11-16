@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Badge, Button, Card, CardContent } from '@kumpelapp/ui'
 import { formatDate, formatKickoff } from '@kumpelapp/utils'
-import { Loader2, Trash2 } from 'lucide-react'
+import { Filter, Loader2, Trash2 } from 'lucide-react'
 
 type RideRow = {
   id: string
@@ -23,6 +23,12 @@ export function MitfahrtenClient({ rides, currentUserId }: { rides: RideRow[]; c
   const [items, setItems] = useState(rides)
   const [pendingId, setPendingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [onlyMine, setOnlyMine] = useState(false)
+
+  const visibleItems = useMemo(() => {
+    if (!onlyMine || !currentUserId) return items
+    return items.filter((r) => r.userId === currentUserId || r.user?.id === currentUserId)
+  }, [items, onlyMine, currentUserId])
 
   async function remove(id: string) {
     setError(null)
@@ -46,8 +52,26 @@ export function MitfahrtenClient({ rides, currentUserId }: { rides: RideRow[]; c
 
   return (
     <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-fc-fg/65">{visibleItems.length} {visibleItems.length === 1 ? 'Eintrag' : 'Einträge'}{onlyMine ? ' (nur meine)' : ''}</p>
+        {currentUserId ? (
+          <Button
+            type="button"
+            variant={onlyMine ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setOnlyMine((v) => !v)}
+            className="gap-1.5"
+            aria-pressed={onlyMine}
+          >
+            <Filter className="h-4 w-4" aria-hidden="true" /> Nur meine
+          </Button>
+        ) : null}
+      </div>
       {error ? <p className="text-sm text-fc-loss" role="alert">{error}</p> : null}
-      {items.map((r) => {
+      {visibleItems.length === 0 ? (
+        <Card className="border-fc-border/70"><CardContent className="py-6 text-fc-fg/70">Keine eigenen Einträge in dieser Ansicht.</CardContent></Card>
+      ) : null}
+      {visibleItems.map((r) => {
         const isMine = !!currentUserId && (r.userId === currentUserId || r.user?.id === currentUserId)
         const busy = pendingId === r.id
         return (
