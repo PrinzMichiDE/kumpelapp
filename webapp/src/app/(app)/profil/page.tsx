@@ -94,6 +94,7 @@ export default async function ProfilPage() {
                 <QuickLink href="/kumpels" label="Kumpels & Gruppen" />
                 <QuickLink href="/tippspiel" label="Tippspiel (3/2/1/0)" />
                 <QuickLink href="/meine-tipps" label="Meine Tipps & Verlauf" />
+                <QuickLink href="/meine-stimmen" label="Meine Stimmen (SdS)" />
                 <QuickLink href="/checkins" label="Meine Check-ins" />
                 <QuickLink href="/tickets" label="Tickets & Wallet" />
                 <QuickLink href="/auswaerts" label="Auswärts-Guide" />
