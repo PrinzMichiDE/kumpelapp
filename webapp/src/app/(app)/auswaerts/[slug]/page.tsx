@@ -7,6 +7,7 @@ import { ArrowLeft, Calendar, Car, ExternalLink, Globe, MapPin, Navigation, Trai
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { DataMeta, ReviewStatusBadge } from '@/components/data-meta'
+import { ShareAction } from '@/components/share-action'
 
 export const dynamic = 'force-dynamic'
 
@@ -133,12 +134,20 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Zurück zum Auswärts-Guide
           </Link>
-          <Link
-            href="/sammler"
-            className="inline-flex items-center justify-center rounded-xl border border-fc-violet/30 bg-fc-violet/10 px-4 py-2 text-sm font-semibold text-fc-fg transition-colors hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
-          >
-            Im Stadion-Sammler erfassen
-          </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <ShareAction
+              title={`${venue.name} – Auswärts-Guide`}
+              text={`${venue.name}${venue.city ? `, ${venue.city}` : ''} · Stadioninfos, Anfahrt und Gästeblock im KumpelApp Auswärts-Guide`}
+              label="Stadion teilen"
+              compact
+            />
+            <Link
+              href="/sammler"
+              className="inline-flex items-center justify-center rounded-xl border border-fc-violet/30 bg-fc-violet/10 px-4 py-2 text-sm font-semibold text-fc-fg transition-colors hover:bg-fc-violet/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
+            >
+              Im Stadion-Sammler erfassen
+            </Link>
+          </div>
         </div>
 
         <Card className="overflow-hidden">

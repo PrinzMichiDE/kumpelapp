@@ -23,6 +23,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { cn } from '@kumpelapp/utils'
 import { DataMeta } from '@/components/data-meta'
+import { ShareAction } from '@/components/share-action'
 import { matchDataCapability } from '@/lib/data-freshness'
 import { getServerSession } from '@/lib/auth-server'
 import { PlayerOfMatchVote } from './player-of-match-vote'
@@ -593,6 +594,11 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
               >
                 <CalendarPlus className="h-4 w-4" aria-hidden="true" /> Alle Termine (.ics)
               </a>
+              <ShareAction
+                title={`${match.homeTeam.shortName || match.homeTeam.name} vs ${match.awayTeam.shortName || match.awayTeam.name}`}
+                text={`${match.homeTeam.shortName || match.homeTeam.name} – ${match.awayTeam.shortName || match.awayTeam.name} · ${formatDate(match.kickoff)} ${formatKickoff(match.kickoff)} Uhr${match.venue ? ` · ${match.venue.name}, ${match.venue.city}` : ''}`}
+                label="Spiel teilen"
+              />
               <Link
                 href="/spielplan"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-fc-border bg-fc-bg/40 px-3 py-2 text-sm font-medium text-fc-fg transition-[border-color,background-color,color,box-shadow] duration-200 hover:border-fc-violet/40 hover:bg-fc-violet/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fc-violet focus-visible:ring-offset-2 focus-visible:ring-offset-fc-bg"
