@@ -4,6 +4,7 @@ import { prisma } from '@kumpelapp/db'
 import { Badge, Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
 import { formatDate, formatKickoff } from '@kumpelapp/utils'
 import { CalendarDays, CalendarPlus, Clock, Download, ExternalLink, Info, Link2, MapPin, RefreshCw, Smartphone } from 'lucide-react'
+import { CopyButton } from '@/components/copy-button'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,13 +22,7 @@ function webcalUrl(origin: string, scope: 'upcoming' | 'all') {
   return absoluteIcsUrl(origin, scope).replace(/^https?:\/\//, 'webcal://')
 }
 
-function CopyHint({ label }: { label: string }) {
-  return (
-    <span className="rounded-md border border-fc-border/70 bg-fc-bg/40 px-2 py-0.5 text-[11px] font-medium text-fc-fg/60">
-      {label}
-    </span>
-  )
-}
+// Kopieraktion erfolgt clientseitig über <CopyButton />.
 
 export default async function KalenderPage() {
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || process.env.BETTER_AUTH_URL || 'https://kumpelapp.vercel.app').replace(/\/$/, '')
@@ -141,7 +136,7 @@ export default async function KalenderPage() {
               <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-fc-fg/55">Abo-URL (HTTPS)</span>
-                  <CopyHint label="Zum Kopieren" />
+                  <CopyButton value={upcomingUrl} label="URL kopieren" />
                 </div>
                 <p className="break-all font-mono text-xs leading-relaxed text-fc-fg/80 select-all">{upcomingUrl}</p>
               </div>
@@ -176,7 +171,7 @@ export default async function KalenderPage() {
               <div className="rounded-xl border border-fc-border/70 bg-fc-bg/30 p-3">
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <span className="text-xs font-semibold uppercase tracking-wide text-fc-fg/55">Abo-URL (HTTPS)</span>
-                  <CopyHint label="Zum Kopieren" />
+                  <CopyButton value={allUrl} label="URL kopieren" />
                 </div>
                 <p className="break-all font-mono text-xs leading-relaxed text-fc-fg/80 select-all">{allUrl}</p>
               </div>
