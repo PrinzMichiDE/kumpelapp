@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Providers } from './providers'
 import { Toaster } from '@kumpelapp/ui'
+import { ServiceWorkerRegister } from '@/components/sw-register'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -71,6 +72,7 @@ export default function RootLayout({
         </a>
         <Providers>{children}</Providers>
         <Toaster />
+        <ServiceWorkerRegister />
       </body>
     </html>
   )

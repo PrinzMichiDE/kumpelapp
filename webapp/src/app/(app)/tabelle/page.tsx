@@ -3,6 +3,8 @@ import { prisma } from '@kumpelapp/db'
 import { Card, CardContent, CardHeader, CardTitle } from '@kumpelapp/ui'
 import { AlertCircle, Minus, SearchX, TrendingDown, TrendingUp, Trophy } from 'lucide-react'
 import { cn } from '@kumpelapp/utils'
+import { DataMeta } from '@/components/data-meta'
+import { staleLabel } from '@/lib/data-freshness'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,6 +109,8 @@ export default async function TabellePage() {
   let leagueName = 'Regionalliga Nordost'
   let seasonLabel: string | null = null
   let updatedAt: string | null = null
+  let syncUpdatedAt: Date | null = null
+  let syncOk = true
   let error: string | null = null
 
   try {
@@ -126,13 +130,20 @@ export default async function TabellePage() {
     if (targetLeague) {
       leagueName = targetLeague.name
       seasonLabel = targetLeague.season?.label ?? null
-      const rows = await prisma.standing.findMany({
-        where: { leagueId: targetLeague.id },
-        include: {
-          team: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
-        },
-        orderBy: { position: 'asc' },
-      })
+      const [rows, syncLog] = await Promise.all([
+        prisma.standing.findMany({
+          where: { leagueId: targetLeague.id },
+          include: {
+            team: { select: { id: true, name: true, shortName: true, logoUrl: true, isOwn: true } },
+          },
+          orderBy: { position: 'asc' },
+        }),
+        prisma.sourceSyncLog.findFirst({
+          where: { source: 'openligadb' },
+          orderBy: { createdAt: 'desc' },
+          select: { createdAt: true, ok: true },
+        }),
+      ])
 
       standings = rows.map((r) => ({
         id: r.id,
@@ -159,6 +170,8 @@ export default async function TabellePage() {
 
       const latest = rows.reduce<Date | null>((acc, r) => (!acc || r.updatedAt > acc ? r.updatedAt : acc), null)
       updatedAt = latest ? latest.toISOString() : null
+      syncUpdatedAt = syncLog?.createdAt ?? latest
+      syncOk = syncLog?.ok ?? true
     }
   } catch (e) {
     error = 'Tabelle konnte nicht geladen werden. Bitte versuche es später erneut.'
@@ -182,20 +195,29 @@ export default async function TabellePage() {
         .map((r) => (r === 'W' ? 'S' : r === 'D' ? 'U' : r === 'L' ? 'N' : r))
         .join(' ')
     : null
+  const staleText = staleLabel(syncUpdatedAt || updatedAt, 'openligadb')
 
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">Tabelle</h1>
           <p className="mt-2 text-fc-fg/70">
             {leagueName}
             {seasonLabel ? ` ${seasonLabel}` : ''}
           </p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-fc-fg/55">
-            {updatedAt ? <p>Stand: {new Date(updatedAt).toLocaleString('de-DE')}</p> : null}
-            <p>Quelle: OpenLigaDB (rlno), mit manuellen Korrekturen möglich</p>
-          </div>
+        </div>
+        <div className="mb-8">
+          <DataMeta
+            source="OpenLigaDB (rlno), mit manuellen Korrekturen möglich"
+            updatedAt={syncUpdatedAt || updatedAt}
+            stale={!!staleText}
+            staleLabel={staleText || 'Datenstand evtl. veraltet'}
+            manualLabel={syncOk ? null : 'Letzter Sync mit Fehler'}
+            capabilityLabel="Tabellenstand abhängig von Quelle/Spielabschluss"
+            capabilityTone="info"
+            note="Abweichungen sind möglich (Korrekturen, Verzögerungen, Spielabbrüche). Bei Unsicherheit offizielle Verbands-/Vereinsangaben prüfen."
+          />
         </div>
 
         {error ? (

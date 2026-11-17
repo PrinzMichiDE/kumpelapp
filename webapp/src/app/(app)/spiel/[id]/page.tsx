@@ -380,22 +380,22 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
               <span>Gegner: {opponentName}</span>
               {match.source ? <span>Quelle: {match.source}</span> : <span>Quelle: unbekannt</span>}
             </div>
-            {match.editorNote ? (
-              <div className="mt-4 rounded-xl border border-fc-draw/30 bg-fc-draw/10 p-3 text-sm text-fc-fg/85">
-                <p className="font-medium text-fc-draw">Redaktioneller Hinweis / Korrektur</p>
-                <p className="mt-1">{match.editorNote}</p>
-              </div>
-            ) : null}
-            <div className="mt-4">
+            <div className="mt-4 space-y-3">
               <DataMeta
                 source={match.source || 'Unbekannt / redaktionell'}
                 updatedAt={match.kickoff}
                 capabilityLabel={capability.label}
                 capabilityTone={capability.key === 'result_only' || capability.key === 'stale' ? 'warn' : capability.key === 'available' ? 'good' : 'info'}
-                manualLabel={match.editorNote ? 'Manuell geprüft/korrigiert möglich' : null}
-                note={`${capability.detail} Änderungen (Verlegung, Status, Ergebnis) sind möglich.`}
+                manualLabel={match.editorNote ? 'Redaktionell korrigiert/geprüft' : null}
+                note={`${capability.detail} Änderungen (Verlegung, Status, Ergebnis) sind möglich. Bei Abweichungen gelten offizielle Meldungen.`}
                 compact
               />
+              {match.editorNote ? (
+                <div className="rounded-xl border border-fc-draw/30 bg-fc-draw/10 p-3 text-sm text-fc-fg/85">
+                  <p className="font-medium text-fc-draw">Redaktioneller Hinweis / Korrektur</p>
+                  <p className="mt-1">{match.editorNote}</p>
+                </div>
+              ) : null}
             </div>
           </CardHeader>
           <CardContent className="p-6 sm:p-8">
@@ -448,13 +448,6 @@ export default async function SpielDetailPage({ params }: { params: Promise<{ id
                   <p className="text-xs uppercase tracking-wide text-fc-fg/55">Wechsel</p>
                   <p className="mt-1 text-lg font-bold tabular-nums text-fc-fg">{eventStats.subs}</p>
                 </div>
-              </div>
-            ) : null}
-
-            {match.editorNote ? (
-              <div className="mt-6 rounded-lg border border-fc-violet/20 bg-fc-violet/5 p-4 text-sm text-fc-fg/80">
-                <p className="font-medium text-fc-violet-light">Hinweis</p>
-                <p className="mt-1">{match.editorNote}</p>
               </div>
             ) : null}
           </CardContent>

@@ -1,30 +1,22 @@
 #!/usr/bin/env tsx
-
-import { syncOpenLigaDB } from '@kumpelapp/ingest'
 import { prisma } from '@kumpelapp/db'
+import { ingestVenues } from '@kumpelapp/ingest'
 
 async function main() {
-  const season = process.argv[2] // e.g., "2026"
-  
-  console.log('🚀 Starting OpenLigaDB ingestion...')
-  console.log(`Season: ${season || 'current'}`)
-  console.log('')
-
+  console.log('🚀 Venue seed ingestion (A5/C1-Basis)...')
+  const startedAt = Date.now()
   try {
-    const result = await syncOpenLigaDB(season)
-    
-    console.log('')
-    console.log('✅ Ingestion completed!')
-    console.log(`   Matches: ${result.matches.created} created, ${result.matches.updated} updated`)
-    console.log(`   Standings: ${result.standings.created} created, ${result.standings.updated} updated`)
-    
-    if (result.errors.length > 0) {
-      console.log(`   ⚠️  Errors: ${result.errors.length}`)
-      result.errors.forEach(err => console.log(`      - ${err}`))
+    const result = await ingestVenues()
+    const durationMs = Date.now() - startedAt
+    console.log('✅ Venue ingestion completed')
+    console.log(JSON.stringify({ created: result.created, updated: result.updated, errors: result.errors.length, durationMs }, null, 2))
+    if (result.errors.length) {
+      console.log('Errors (max 20):')
+      result.errors.slice(0, 20).forEach((e) => console.log(` - ${e}`))
     }
-    
+    console.log('Hinweis: Kritische Felder (Gästeblock/Einlass/Parken/ÖPNV/Barriere) redaktionell prüfen und reviewStatus/fetchedAt pflegen.')
   } catch (error) {
-    console.error('❌ Ingestion failed:', error)
+    console.error('❌ Venue ingestion failed:', error)
     process.exit(1)
   } finally {
     await prisma.$disconnect()

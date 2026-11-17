@@ -4,6 +4,8 @@ import { cn } from '@kumpelapp/utils'
 import { AlertCircle, SearchX } from 'lucide-react'
 import Link from 'next/link'
 import { NewsExplorer } from './news-explorer'
+import { DataMeta } from '@/components/data-meta'
+import { staleLabel } from '@/lib/data-freshness'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +31,7 @@ export default async function NewsPage({
   let availableSources: string[] = []
   let error: string | null = null
 
+  let latestPublishedAt: string | null = null
   try {
     const [rows, sources] = await Promise.all([
       prisma.newsItem.findMany({
@@ -54,6 +57,7 @@ export default async function NewsPage({
       category: r.category,
     }))
     availableSources = sources.map((s) => s.source)
+    latestPublishedAt = items[0]?.publishedAt ?? null
   } catch (e) {
     error = 'News konnten nicht geladen werden. Bitte versuche es später erneut.'
     console.error('News load error', e)
@@ -64,9 +68,20 @@ export default async function NewsPage({
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">News</h1>
           <p className="mt-2 text-fc-fg/70">Aktuelle Nachrichten rund um den FC Erzgebirge Aue – durchsuchen, filtern und direkt lesen.</p>
+        </div>
+        <div className="mb-8">
+          <DataMeta
+            source={source ? `Kuratiert/aggregiert: ${sourceMeta(source).label}` : 'Kuratierte Quellen (Teaser + Deep-Link)'}
+            updatedAt={latestPublishedAt}
+            stale={!!staleLabel(latestPublishedAt, 'news')}
+            staleLabel={staleLabel(latestPublishedAt, 'news') || 'Datenstand evtl. veraltet'}
+            capabilityLabel="News als Teaser/Link, keine Volltextübernahme"
+            capabilityTone="info"
+            note="Inhalte stammen aus externen Quellen. Rechte/Lizenzen liegen bei den jeweiligen Anbietern; für Details Originalquelle öffnen."
+          />
         </div>
 
         <div className="mb-6 flex flex-wrap items-center gap-2" role="group" aria-label="Nachrichten filtern nach Quelle">

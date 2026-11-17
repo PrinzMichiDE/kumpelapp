@@ -194,11 +194,14 @@ export function NewsExplorer({ items, activeSource }: { items: NewsItemDto[]; ac
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3" id="news-list">
-          {filtered.map((news) => (
-            <NewsCard key={news.id} news={news} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-5 sm:gap-6 md:grid-cols-2 lg:grid-cols-3" id="news-list">
+            {filtered.map((news) => (
+              <NewsCard key={news.id} news={news} />
+            ))}
+          </div>
+          <p className="text-xs text-fc-fg/55">Hinweis: News werden als Teaser/Links aus externen Quellen angezeigt (keine Volltextübernahme). Verfügbarkeit und Inhalte können sich bei der Quelle ändern.</p>
+        </>
       )}
     </div>
   )

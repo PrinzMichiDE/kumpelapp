@@ -1,24 +1,22 @@
 #!/usr/bin/env tsx
-
 import { prisma } from '@kumpelapp/db'
+import { ingestAwayInfo } from '@kumpelapp/ingest'
 
 async function main() {
-  console.log('🚀 Starting Away-Info ingestion...')
-  console.log('')
-
+  console.log('🚀 Away-info ingestion (Venue-Review/Anreicherung)...')
+  const startedAt = Date.now()
   try {
-    // This will be implemented to fetch from fc-erzgebirge.de articles
-    // For now, just log that it's a placeholder
-    console.log('ℹ️  Away-Info ingestion not yet implemented')
-    console.log('   Will fetch from fc-erzgebirge.de "Zu Gast beim..." articles')
-    
-    // TODO: Implement actual fetching
-    // - Search for articles with pattern "Zu Gast beim" or "Infos für Gästefans"
-    // - Parse Gästeblock, Anfahrt, Parken, Einlass
-    // - Update Venue records
-    
+    const result = await ingestAwayInfo()
+    const durationMs = Date.now() - startedAt
+    console.log('✅ Away-info ingestion completed')
+    console.log(JSON.stringify({ created: result.created, updated: result.updated, errors: result.errors.length, durationMs }, null, 2))
+    if (result.errors.length) {
+      console.log('Errors (max 20):')
+      result.errors.slice(0, 20).forEach((e) => console.log(` - ${e}`))
+    }
+    console.log('Hinweis: Nur belegbare Informationen übernehmen; Review-Status und fetchedAt/Feldquellen prüfen.')
   } catch (error) {
-    console.error('❌ Ingestion failed:', error)
+    console.error('❌ Away-info ingestion failed:', error)
     process.exit(1)
   } finally {
     await prisma.$disconnect()

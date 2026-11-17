@@ -1,29 +1,22 @@
 #!/usr/bin/env tsx
-
 import { prisma } from '@kumpelapp/db'
+import { ingestQuiz } from '@kumpelapp/ingest'
 
 async function main() {
-  console.log('🚀 Starting Quiz generation...')
-  console.log('')
-
+  console.log('🚀 Quiz seed ingestion (C4 Qualitätspfad)...')
+  const startedAt = Date.now()
   try {
-    console.log('ℹ️  Quiz generation not yet implemented')
-    console.log('   Will generate from existing DB data:')
-    console.log('   - Titel (template:titles)')
-    console.log('   - Matches (template:matches)')
-    console.log('   - Venues (template:venues)')
-    console.log('   - Season Records (template:records)')
-    console.log('   - Squad (template:squad)')
-    
-    // TODO: Implement actual quiz generation
-    // - Query existing data
-    // - Generate questions per template
-    // - Create distractors from same dataset
-    // - Ensure minimum 3 distractors per question
-    // - Store in QuizQuestion table
-    
+    const result = await ingestQuiz()
+    const durationMs = Date.now() - startedAt
+    console.log('✅ Quiz ingestion completed')
+    console.log(JSON.stringify({ created: result.created, updated: result.updated, errors: result.errors.length, durationMs }, null, 2))
+    if (result.errors.length) {
+      console.log('Errors (max 20):')
+      result.errors.slice(0, 20).forEach((e) => console.log(` - ${e}`))
+    }
+    console.log('Hinweis: Fragen auf Fakten, Eindeutigkeit, Duplikate und Review-Status prüfen.')
   } catch (error) {
-    console.error('❌ Quiz generation failed:', error)
+    console.error('❌ Quiz ingestion failed:', error)
     process.exit(1)
   } finally {
     await prisma.$disconnect()

@@ -200,6 +200,10 @@ model Team {
   titles       Title[]
   externalId   String?   @unique
   updatedAt    DateTime  @updatedAt
+  homeMatches  Match[]   @relation("HomeTeam")
+  awayMatches  Match[]   @relation("AwayTeam")
+  standings    Standing[]
+  seasonRecords SeasonRecord[]
 
   @@index([isOwn, kind])
 }
@@ -285,7 +289,9 @@ model Match {
   venueId       String?
   venue         Venue?      @relation(fields: [venueId], references: [id])
   homeTeamId    String
+  homeTeam      Team        @relation("HomeTeam", fields: [homeTeamId], references: [id])
   awayTeamId    String
+  awayTeam      Team        @relation("AwayTeam", fields: [awayTeamId], references: [id])
   homeGoals     Int?
   awayGoals     Int?
   halftimeHome  Int?
@@ -326,6 +332,7 @@ model Standing {
   leagueId      String
   league        League @relation(fields: [leagueId], references: [id])
   teamId        String
+  team          Team   @relation(fields: [teamId], references: [id])
   position      Int
   played        Int @default(0)
   won           Int @default(0)
@@ -395,6 +402,8 @@ model SeasonRecord {
   source       String?
   sourceUrl    String?
   attribution  String?
+  teamId       String?
+  team         Team?        @relation(fields: [teamId], references: [id])
 
   @@unique([label, leagueName])
 }

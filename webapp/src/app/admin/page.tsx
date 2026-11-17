@@ -26,11 +26,11 @@ const stats = [
 ]
 
 const quickActions = [
+  { label: 'Sync & Monitoring', href: '/admin/sync', icon: Shield },
+  { label: 'Spiel korrigieren', href: '/admin/matches', icon: FileText },
   { label: 'Neues Team anlegen', href: '/admin/teams/new', icon: Users },
   { label: 'Stadion hinzufügen', href: '/admin/venues/new', icon: MapPin },
   { label: 'Fanclub eintragen', href: '/admin/fanclubs/new', icon: Users },
-  { label: 'Link hinzufügen', href: '/admin/links/new', icon: FileText },
-  { label: 'Titel eintragen', href: '/admin/tradition/titles/new', icon: Trophy },
   { label: 'Quiz-Frage erstellen', href: '/admin/tradition/quiz/new', icon: Shield },
 ]
 

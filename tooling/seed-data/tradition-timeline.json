@@ -1,0 +1,18 @@
+{
+  "titles": [
+    { "year": 1955, "competition": "FDGB-Pokal", "note": "Pokalsieg als SC Wismut Karl-Marx-Stadt – erster großer nationaler Titel.", "reviewStatus": "CHECKED", "source": "manuell", "attribution": "Vereins-/Geschichtsdaten (kuratierte Zusammenfassung)" },
+    { "year": 1956, "competition": "DDR-Oberliga", "note": "DDR-Meister (Wismut-Ära).", "reviewStatus": "CHECKED", "source": "manuell", "attribution": "Vereins-/Geschichtsdaten" },
+    { "year": 1957, "competition": "DDR-Oberliga", "note": "Titelverteidigung – zweite Meisterschaft in Folge.", "reviewStatus": "CHECKED", "source": "manuell", "attribution": "Vereins-/Geschichtsdaten" },
+    { "year": 1959, "competition": "DDR-Oberliga", "note": "Dritter DDR-Meistertitel der Wismut-Ära.", "reviewStatus": "CHECKED", "source": "manuell", "attribution": "Vereins-/Geschichtsdaten" }
+  ],
+  "seasonRecords": [
+    { "label": "1946", "leagueName": "Gründung/Anfänge", "tier": null, "position": null, "points": null, "note": "Wurzeln des Vereins in der Nachkriegszeit (u. a. SG Aue).", "reviewStatus": "CHECKED", "source": "manuell" },
+    { "label": "1950er", "leagueName": "DDR-Oberliga (Wismut-Ära)", "tier": 1, "position": null, "points": null, "note": "Glanzzeit mit nationalen Titeln und europäischer Wahrnehmung.", "reviewStatus": "CHECKED", "source": "manuell" },
+    { "label": "1990/91", "leagueName": "NOFV-Oberliga / Übergang", "tier": 2, "position": null, "points": null, "note": "Umbruch nach der Wiedervereinigung und Neuordnung des Vereinsfußballs.", "reviewStatus": "AUTO", "source": "manuell" },
+    { "label": "2003/04", "leagueName": "Regionalliga Nord", "tier": 3, "position": 2, "points": null, "note": "Aufstieg in die 2. Bundesliga (Meilenstein der jüngeren Geschichte).", "reviewStatus": "CHECKED", "source": "manuell" },
+    { "label": "2010/11–2014/15", "leagueName": "2. Bundesliga", "tier": 2, "position": null, "points": null, "note": "Mehrjährige Phase im Profifußball der 2. Bundesliga.", "reviewStatus": "AUTO", "source": "manuell" },
+    { "label": "2016/17–2025/26", "leagueName": "2. Bundesliga / 3. Liga", "tier": null, "position": null, "points": null, "note": "Wechselhafte Jahre zwischen 2. Bundesliga und 3. Liga.", "reviewStatus": "AUTO", "source": "manuell" },
+    { "label": "2025/26", "leagueName": "3. Liga", "tier": 3, "position": 18, "points": null, "note": "Abstieg in die Regionalliga Nordost.", "reviewStatus": "AUTO", "source": "manuell" },
+    { "label": "2026/27", "leagueName": "Regionalliga Nordost", "tier": 4, "position": null, "points": null, "note": "Neustart in der RLNO mit dem Ziel Rückkehr in den Profifußball.", "reviewStatus": "AUTO", "source": "seed" }
+  ]
+}

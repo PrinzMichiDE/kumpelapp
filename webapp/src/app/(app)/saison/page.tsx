@@ -15,6 +15,8 @@ import {
   SearchX,
   Shield,
 } from 'lucide-react'
+import { DataMeta } from '@/components/data-meta'
+import { staleLabel } from '@/lib/data-freshness'
 
 export const dynamic = 'force-dynamic'
 
@@ -96,6 +98,8 @@ export default async function SaisonPage({
   let leagueName = 'Regionalliga Nordost'
   let seasonLabel: string | null = null
   let error: string | null = null
+  let syncUpdatedAt: Date | null = null
+  let syncOk = true
 
   try {
     const league = await prisma.league.findFirst({
@@ -110,23 +114,26 @@ export default async function SaisonPage({
         orderBy: [{ season: { startYear: 'desc' } }, { tier: 'asc' }],
       }))
 
+    const [rows, syncLog] = await Promise.all([
+      prisma.match.findMany({
+        where: {
+          ...(targetLeague ? { leagueId: targetLeague.id } : {}),
+          OR: [{ homeTeam: { isOwn: true } }, { awayTeam: { isOwn: true } }],
+        },
+        include: {
+          homeTeam: { select: { name: true, shortName: true, isOwn: true } },
+          awayTeam: { select: { name: true, shortName: true, isOwn: true } },
+          venue: { select: { name: true } },
+        },
+        orderBy: [{ matchday: 'asc' }, { kickoff: 'asc' }],
+      }),
+      prisma.sourceSyncLog.findFirst({ where: { source: 'openligadb' }, orderBy: { createdAt: 'desc' }, select: { createdAt: true, ok: true } }),
+    ])
+
     if (targetLeague) {
       leagueName = targetLeague.name
       seasonLabel = targetLeague.season?.label ?? null
     }
-
-    const rows = await prisma.match.findMany({
-      where: {
-        ...(targetLeague ? { leagueId: targetLeague.id } : {}),
-        OR: [{ homeTeam: { isOwn: true } }, { awayTeam: { isOwn: true } }],
-      },
-      include: {
-        homeTeam: { select: { name: true, shortName: true, isOwn: true } },
-        awayTeam: { select: { name: true, shortName: true, isOwn: true } },
-        venue: { select: { name: true } },
-      },
-      orderBy: [{ matchday: 'asc' }, { kickoff: 'asc' }],
-    })
 
     matches = rows.map((m) => ({
       id: m.id,
@@ -139,6 +146,8 @@ export default async function SaisonPage({
       awayTeam: m.awayTeam,
       venue: m.venue ? { name: m.venue.name } : null,
     }))
+    syncUpdatedAt = syncLog?.createdAt ?? null
+    syncOk = syncLog?.ok ?? true
   } catch (e) {
     error = 'Saisonverlauf konnte nicht geladen werden. Bitte versuche es später erneut.'
     console.error('Saison load error', e)
@@ -271,12 +280,24 @@ export default async function SaisonPage({
   return (
     <div className="min-h-screen bg-fc-bg">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-fc-fg md:text-4xl">Saisonverlauf</h1>
           <p className="mt-2 text-fc-fg/70">
             {leagueName}
             {seasonLabel ? ` · Saison ${seasonLabel}` : ''} – Ergebnisse, Form und Bilanz des FC Erzgebirge Aue
           </p>
+        </div>
+        <div className="mb-8">
+          <DataMeta
+            source="OpenLigaDB (rlno), abgeleitet aus Spieldaten"
+            updatedAt={syncUpdatedAt}
+            stale={!!staleLabel(syncUpdatedAt, 'openligadb')}
+            staleLabel={staleLabel(syncUpdatedAt, 'openligadb') || 'Datenstand evtl. veraltet'}
+            manualLabel={syncOk ? null : 'Letzter Sync mit Fehler'}
+            capabilityLabel="Saisonstatistik basiert auf verfügbaren Spielständen/Status"
+            capabilityTone="info"
+            note="Korrekturen und Nachtragungen können Statistikwerte verändern. Quelle/Stand auf Spiel- und Tabellenansichten beachten."
+          />
         </div>
 
         {error ? (

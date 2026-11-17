@@ -1,7 +1,20 @@
 import { PrismaClient, TeamKind, ReviewStatus, UserRole } from '@prisma/client'
 import { hash } from 'bcryptjs'
+import fs from 'node:fs'
+import path from 'node:path'
 
 const prisma = new PrismaClient()
+
+function readJsonIfExists<T>(relative: string): T | null {
+  try {
+    const file = path.resolve(process.cwd(), relative)
+    if (!fs.existsSync(file)) return null
+    return JSON.parse(fs.readFileSync(file, 'utf8')) as T
+  } catch (e) {
+    console.warn('Seed JSON read failed:', relative, e)
+    return null
+  }
+}
 
 async function main() {
   console.log('🌱 Seeding database...')
@@ -329,23 +342,73 @@ async function main() {
     })
   }
 
-  // Quiz Questions
-  const quizData = [
-    { question: 'In welchem Jahr wurde Aue zuletzt DDR-Meister?', answers: [{ text: '1959', correct: true }, { text: '1960', correct: false }, { text: '1958', correct: false }, { text: '1961', correct: false }], category: 'Titel', generatedBy: 'template:titles', sourceRef: 'Title:1959:DDR-Oberliga', reviewStatus: ReviewStatus.AUTO },
-    { question: 'Wie oft gewann Aue den FDGB-Pokal?', answers: [{ text: '1x (1955)', correct: true }, { text: '2x', correct: false }, { text: '3x', correct: false }, { text: 'Nie', correct: false }], category: 'Titel', generatedBy: 'template:titles', sourceRef: 'Title:1955:FDGB-Pokal', reviewStatus: ReviewStatus.AUTO },
-    { question: 'Wie hieß der Gegner am 1. Spieltag 2026/27?', answers: [{ text: 'VSG Altglienicke', correct: true }, { text: 'Chemnitzer FC', correct: false }, { text: 'BFC Dynamo', correct: false }, { text: 'Hallescher FC', correct: false }], category: 'Saison 2026/27', generatedBy: 'template:matches', sourceRef: 'Match:1', reviewStatus: ReviewStatus.AUTO },
-    { question: 'In welchem Stadion trägt der RSV Eintracht seine Heimspiele aus?', answers: [{ text: 'Preußenstadion', correct: true }, { text: 'Karl-Liebknecht-Stadion', correct: false }, { text: 'Stadion Altglienicke', correct: false }, { text: 'Werner-Seelenbinder-Stadion', correct: false }], category: 'Stadien', generatedBy: 'template:venues', sourceRef: 'Venue:preussenstadion-stahnsdorf', reviewStatus: ReviewStatus.AUTO },
-    { question: 'Welcher Spieler gilt als Rekordtorschütze der BSG Wismut Aue?', answers: [{ text: 'Gerd Schädlich', correct: true }, { text: 'Dieter Schüßler', correct: false }, { text: 'Manfred Zapf', correct: false }, { text: 'Hans-Jürgen Dörner', correct: false }], category: 'Legenden', generatedBy: 'template:titles', sourceRef: 'Player:legend-gerd-schaedlich', reviewStatus: ReviewStatus.AUTO },
-    { question: 'Wie viele DDR-Meistertitel hat Aue gewonnen?', answers: [{ text: '3', correct: true }, { text: '2', correct: false }, { text: '4', correct: false }, { text: '1', correct: false }], category: 'Titel', generatedBy: 'template:titles', sourceRef: 'Title:count:DDR-Oberliga', reviewStatus: ReviewStatus.AUTO },
-    { question: 'Welches Stadion ist das Heimstadion von Energie Cottbus?', answers: [{ text: 'Stadion der Freundschaft', correct: true }, { text: 'Stadion der Freundschaft', correct: true }, { text: 'Ernst-Grube-Stadion', correct: false }, { text: 'Volksparkstadion', correct: false }], category: 'Stadien', generatedBy: 'template:venues', sourceRef: 'Venue:stadion-der-freundschaft', reviewStatus: ReviewStatus.AUTO },
+  // Quiz Questions (seed + tooling/seed-data/quiz-veilchen.json)
+  const externalQuiz = readJsonIfExists<any[]>('tooling/seed-data/quiz-veilchen.json') || []
+  const fallbackQuiz = [
+    { question: 'In welchem Jahr wurde Aue zuletzt DDR-Meister?', answers: [{ text: '1959', correct: true }, { text: '1960', correct: false }, { text: '1958', correct: false }, { text: '1961', correct: false }], category: 'Titel', generatedBy: 'seed:fallback', sourceRef: 'Title:1959:DDR-Oberliga', reviewStatus: 'AUTO' },
+    { question: 'Wie oft gewann Aue den FDGB-Pokal?', answers: [{ text: '1x (1955)', correct: true }, { text: '2x', correct: false }, { text: '3x', correct: false }, { text: 'Nie', correct: false }], category: 'Titel', generatedBy: 'seed:fallback', sourceRef: 'Title:1955:FDGB-Pokal', reviewStatus: 'AUTO' },
   ]
-
+  const quizData = (externalQuiz.length ? externalQuiz : fallbackQuiz) as any[]
+  const seenQuestions = new Set<string>()
   for (const q of quizData) {
-    await prisma.quizQuestion.upsert({
-      where: { id: `quiz-${q.question.slice(0, 20)}` },
-      update: q,
-      create: q,
+    const question = String(q.question || '').trim()
+    if (!question || seenQuestions.has(question)) continue
+    seenQuestions.add(question)
+    const existing = await prisma.quizQuestion.findFirst({ where: { question } })
+    const payload = {
+      question,
+      answers: q.answers,
+      category: q.category ?? null,
+      active: q.active ?? true,
+      generatedBy: q.generatedBy ?? 'seed',
+      sourceRef: q.sourceRef ?? null,
+      reviewStatus: (q.reviewStatus as ReviewStatus) || ReviewStatus.AUTO,
+    }
+    if (existing) await prisma.quizQuestion.update({ where: { id: existing.id }, data: payload })
+    else await prisma.quizQuestion.create({ data: payload })
+  }
+
+  // Extra seed: RLNO 26/27 venues + tradition timeline (if present)
+  const extraVenues = readJsonIfExists<any[]>('tooling/seed-data/venues-rlno-2026-27.json') || []
+  for (const v of extraVenues) {
+    if (!v?.slug) continue
+    await prisma.venue.upsert({
+      where: { slug: v.slug },
+      update: {
+        name: v.name, city: v.city, address: v.address ?? null, lat: v.lat ?? null, lng: v.lng ?? null,
+        capacity: v.capacity ?? null, distanceKm: v.distanceKm ?? null, travelMinutesCar: v.travelMinutesCar ?? null,
+        awayBlockInfo: v.awayBlockInfo ?? null, travelCar: v.travelCar ?? null, travelTrain: v.travelTrain ?? null,
+        parkingInfo: v.parkingInfo ?? null, website: v.website ?? null, reviewStatus: (v.reviewStatus as ReviewStatus) || ReviewStatus.AUTO,
+        source: v.source ?? 'seed', attribution: v.attribution ?? null,
+      },
+      create: {
+        slug: v.slug, name: v.name, city: v.city || 'Unbekannt', address: v.address ?? null, lat: v.lat ?? null, lng: v.lng ?? null,
+        capacity: v.capacity ?? null, distanceKm: v.distanceKm ?? null, travelMinutesCar: v.travelMinutesCar ?? null,
+        awayBlockInfo: v.awayBlockInfo ?? null, travelCar: v.travelCar ?? null, travelTrain: v.travelTrain ?? null,
+        parkingInfo: v.parkingInfo ?? null, website: v.website ?? null, reviewStatus: (v.reviewStatus as ReviewStatus) || ReviewStatus.AUTO,
+        source: v.source ?? 'seed', attribution: v.attribution ?? null,
+      },
     })
+  }
+
+  const tradition = readJsonIfExists<any>('tooling/seed-data/tradition-timeline.json')
+  if (tradition?.titles) {
+    for (const t of tradition.titles) {
+      await prisma.title.upsert({
+        where: { year_competition: { year: t.year, competition: t.competition } },
+        update: { note: t.note ?? null, teamId: aueTeam.id, reviewStatus: (t.reviewStatus as ReviewStatus) || ReviewStatus.AUTO, source: t.source ?? 'seed', attribution: t.attribution ?? null },
+        create: { year: t.year, competition: t.competition, note: t.note ?? null, teamId: aueTeam.id, reviewStatus: (t.reviewStatus as ReviewStatus) || ReviewStatus.AUTO, source: t.source ?? 'seed', attribution: t.attribution ?? null },
+      })
+    }
+  }
+  if (tradition?.seasonRecords) {
+    for (const r of tradition.seasonRecords) {
+      await prisma.seasonRecord.upsert({
+        where: { label_leagueName: { label: r.label, leagueName: r.leagueName } },
+        update: { tier: r.tier ?? null, position: r.position ?? null, points: r.points ?? null, note: r.note ?? null, reviewStatus: (r.reviewStatus as ReviewStatus) || ReviewStatus.AUTO, source: r.source ?? 'seed' },
+        create: { label: r.label, leagueName: r.leagueName, tier: r.tier ?? null, position: r.position ?? null, points: r.points ?? null, note: r.note ?? null, reviewStatus: (r.reviewStatus as ReviewStatus) || ReviewStatus.AUTO, source: r.source ?? 'seed' },
+      })
+    }
   }
 
   // League Entries

@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@kumpelapp/auth'
 import { prisma } from '@kumpelapp/db'
+import { ingestTraditions } from '@kumpelapp/ingest'
 
 export async function POST(request: NextRequest) {
   try {
     const session = await auth.api.getSession({ headers: request.headers })
-    
+
     if (!session) {
       return NextResponse.json(
         { error: { code: 'UNAUTHORIZED', message: 'Nicht angemeldet' } },
@@ -21,19 +22,29 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`Manual Traditions sync triggered by ${session.user.email}`)
-
-    // TODO: Implement actual traditions fetching
+    const result = await ingestTraditions()
     return NextResponse.json({
       success: true,
       data: {
-        message: 'Traditions sync not yet implemented',
-        created: 0,
-        updated: 0,
+        message: 'Traditionsdaten (Seed) synchronisiert',
+        created: result.created,
+        updated: result.updated,
+        items: result.items,
+        errors: result.errors.length,
+        errorDetails: result.errors.slice(0, 10),
       },
     })
-
   } catch (error) {
     console.error('Traditions sync error:', error)
+    await prisma.sourceSyncLog.create({
+      data: {
+        source: 'traditions',
+        ok: false,
+        durationMs: 0,
+        items: 0,
+        message: `Admin-Sync fehlgeschlagen: ${String(error).slice(0, 500)}`,
+      },
+    }).catch(() => null)
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Sync fehlgeschlagen' } },
       { status: 500 }
@@ -41,10 +52,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: new Headers() })
-    
+    const session = await auth.api.getSession({ headers: request.headers })
+
     if (!session || (session.user.role !== 'EDITOR' && session.user.role !== 'ADMIN')) {
       return NextResponse.json(
         { error: { code: 'FORBIDDEN', message: 'Keine Berechtigung' } },
@@ -59,7 +70,6 @@ export async function GET() {
     })
 
     return NextResponse.json({ data: logs })
-
   } catch (error) {
     return NextResponse.json(
       { error: { code: 'INTERNAL_ERROR', message: 'Fehler beim Laden der Logs' } },

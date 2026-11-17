@@ -47,10 +47,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: new Headers() })
-    
+    const session = await auth.api.getSession({ headers: request.headers })
+
     if (!session || (session.user.role !== 'EDITOR' && session.user.role !== 'ADMIN')) {
       return NextResponse.json(
         { error: { code: 'FORBIDDEN', message: 'Keine Berechtigung' } },

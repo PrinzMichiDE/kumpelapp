@@ -10,6 +10,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { name: 'Sync', href: '/admin/sync', icon: LayoutDashboard },
+  { name: 'Spiele', href: '/admin/matches', icon: FileText },
   { name: 'Teams', href: '/admin/teams', icon: Users },
   { name: 'Stadien', href: '/admin/venues', icon: MapPin },
   { name: 'Fanclubs', href: '/admin/fanclubs', icon: Users },

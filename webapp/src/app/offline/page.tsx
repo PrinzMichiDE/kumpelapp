@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { Calendar, Home, MapPin, Trophy, WifiOff } from 'lucide-react'
+import { Calendar, Home, MapPin, Radio, Trophy, WifiOff } from 'lucide-react'
 import { Card, CardContent } from '@kumpelapp/ui'
 import { Footer } from '@/components/footer'
 import { Header } from '@/components/header'
@@ -15,21 +15,27 @@ export const metadata: Metadata = {
 
 const cachedAreas = [
   {
+    href: '/stadionmodus',
+    title: 'Stadionmodus',
+    description: 'Nächstes Spiel, Status, Route, Ticket- und Stream-Hinweise aus dem letzten Stand.',
+    icon: Radio,
+  },
+  {
     href: '/spielplan',
     title: 'Spielplan & Ergebnisse',
-    description: 'Zuletzt synchronisierte Spiele, Anstoßzeiten und Ergebnisse abrufen.',
+    description: 'Zuletzt geladene Spiele, Anstoßzeiten, Ergebnisse und Matchseiten.',
     icon: Calendar,
   },
   {
     href: '/tabelle',
     title: 'Tabelle & Saison',
-    description: 'Tabellenstand und Saisoninfos aus dem letzten Stand ansehen.',
+    description: 'Tabellenstand und Saisoninfos aus dem letzten Snapshot.',
     icon: Trophy,
   },
   {
     href: '/auswaerts',
     title: 'Auswärts-Guide',
-    description: 'Stadioninfos und Anfahrtsdetails öffnen, sofern bereits geladen.',
+    description: 'Stadion- und Anfahrtsinfos, wenn die Seite zuvor geöffnet wurde.',
     icon: MapPin,
   },
 ] as const
@@ -62,7 +68,7 @@ export default function OfflinePage() {
                 <h2 id="offline-cached-heading" className="text-sm font-semibold uppercase tracking-wide text-fc-fg/55">
                   Offline verfügbare Bereiche
                 </h2>
-                <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
                   {cachedAreas.map((area) => {
                     const Icon = area.icon
                     return (

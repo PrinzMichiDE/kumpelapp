@@ -84,6 +84,9 @@ export async function GET(request: NextRequest) {
     const dtstamp = formatIcsDateUtc(now)
     const origin = new URL(request.url).origin
 
+    const calDesc = scope === 'all'
+      ? 'Alle Aue-Spiele der aktuellen Saison (Datenstand kann sich ändern).'
+      : 'Kommende Aue-Spiele (Datenstand kann sich kurzfristig ändern).'
     const lines: string[] = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -91,7 +94,10 @@ export async function GET(request: NextRequest) {
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
       foldLine(`X-WR-CALNAME:${escapeIcsText(calName)}`),
+      foldLine(`X-WR-CALDESC:${escapeIcsText(calDesc)}`),
       'X-WR-TIMEZONE:Europe/Berlin',
+      'REFRESH-INTERVAL;VALUE=DURATION:PT6H',
+      'X-PUBLISHED-TTL:PT6H',
     ]
 
     for (const m of rows) {

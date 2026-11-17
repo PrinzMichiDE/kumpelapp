@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { DataMeta, ReviewStatusBadge } from '@/components/data-meta'
 import { ShareAction } from '@/components/share-action'
+import { staleLabel } from '@/lib/data-freshness'
 
 export const dynamic = 'force-dynamic'
 
@@ -169,6 +170,19 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
                   <img src={venue.imageUrl} alt="" className="h-full w-full object-cover" loading="lazy" decoding="async" />
                 </div>
               ) : null}
+            </div>
+            <div className="mt-4">
+              <DataMeta
+                source={venue.source || 'Seed-/redaktionelle Venue-Daten'}
+                updatedAt={venue.fetchedAt}
+                reviewStatus={venue.reviewStatus}
+                stale={!!staleLabel(venue.fetchedAt, 'venues')}
+                staleLabel={staleLabel(venue.fetchedAt, 'venues') || 'Prüfstand evtl. veraltet'}
+                capabilityLabel="Auswärtsinformationen mit Prüfstatus"
+                capabilityTone={venue.reviewStatus === 'CHECKED' ? 'good' : 'info'}
+                note="Kritische Angaben (Gästeblock, Einlass, Parken, ÖPNV, Barriere) vor der Reise mit offiziellen Quellen prüfen. Nur belegbare Hinweise sind verlässlich."
+                compact
+              />
             </div>
           </CardHeader>
           <CardContent className="p-6 sm:p-8">

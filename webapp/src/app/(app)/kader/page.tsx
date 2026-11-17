@@ -3,6 +3,8 @@ import { prisma } from '@kumpelapp/db'
 import { AlertCircle, SearchX } from 'lucide-react'
 import { SquadBirthdaysCard } from '@/components/squad-birthdays'
 import { KaderExplorer } from './kader-explorer'
+import { DataMeta } from '@/components/data-meta'
+import { staleLabel } from '@/lib/data-freshness'
 
 export const dynamic = 'force-dynamic'
 
@@ -83,6 +85,16 @@ export default async function KaderPage() {
             {players.length} {players.length === 1 ? 'Spieler' : 'Spieler'} im Kader
             {players.length > 0 ? ' · Suche und Filter verfügbar' : ''}
           </p>
+          <div className="mt-4">
+            <DataMeta
+              source="Kaderdaten (Sync/Seed, öffentliche Quellen)"
+              reviewStatus="AUTO"
+              stale={false}
+              capabilityLabel="Kaderdaten können von offizieller Aufstellung abweichen"
+              capabilityTone="info"
+              note="Vor Spieltag/Nominierung offizielle Vereinsangaben prüfen. Quellen/Stand sind abhängig vom letzten Kader-Sync."
+            />
+          </div>
         </div>
 
         {error ? (

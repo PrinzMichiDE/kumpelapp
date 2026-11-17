@@ -1,0 +1,201 @@
+{
+  "version": 2,
+  "skills": {
+    "better-auth-best-practices": {
+      "source": "better-auth/skills",
+      "commit": "20c9e88a5c007461a703f1c213572b073196113e",
+      "sourceType": "github",
+      "skillPath": "better-auth/best-practices/SKILL.md",
+      "computedHash": "2773c3687f2cf96d659049ebf2d8c86058a33541b09360712df0dc6b1404c403"
+    },
+    "better-auth-security-best-practices": {
+      "source": "better-auth/skills",
+      "commit": "20c9e88a5c007461a703f1c213572b073196113e",
+      "sourceType": "github",
+      "skillPath": "security/SKILL.md",
+      "computedHash": "36e9710eaa13c61c00bec00a4902fdc6ed829e6de13127238ae57494e93c1d9d"
+    },
+    "email-and-password-best-practices": {
+      "source": "better-auth/skills",
+      "commit": "20c9e88a5c007461a703f1c213572b073196113e",
+      "sourceType": "github",
+      "skillPath": "better-auth/emailAndPassword/SKILL.md",
+      "computedHash": "407c1244202876daa748818ed41dc55afde1b3f7aec48ae3a1f1c8a7ee40465e"
+    },
+    "firebase-basics": {
+      "source": "firebase/agent-skills",
+      "commit": "99954a30898bb5ddc8152ee10e124dc3b4106bf7",
+      "sourceType": "github",
+      "skillPath": "skills/firebase-basics/SKILL.md",
+      "computedHash": "13a496dfb9130cbb273e44f521e78106c2e59787af92d8c06eb225839d346bbf"
+    },
+    "firebase-crashlytics": {
+      "source": "firebase/agent-skills",
+      "commit": "99954a30898bb5ddc8152ee10e124dc3b4106bf7",
+      "sourceType": "github",
+      "skillPath": "skills/firebase-crashlytics/SKILL.md",
+      "computedHash": "e84a658b65ebd997ad0a3e5553a6d03553f45737bb656e02f2109ea988774ef2"
+    },
+    "frontend-a11y": {
+      "source": "affaan-m/ECC",
+      "commit": "3f14a103a8694e51c1df9a806217a6d0b5f7a6f7",
+      "sourceType": "github",
+      "skillPath": "skills/frontend-a11y/SKILL.md",
+      "computedHash": "a75b4ef44b6b14f0eef8e48238f6e8e15c44cf3d329bf517e6bbc471de74efd2"
+    },
+    "netlify-frameworks": {
+      "source": "netlify/context-and-tools",
+      "commit": "905256ef236890a842be1ff1c5fd6bb07baa1890",
+      "sourceType": "github",
+      "skillPath": "skills/netlify-frameworks/SKILL.md",
+      "computedHash": "99f9126a210dba3008a61d20657f7b21e80795138aac2948aa8d4ad03432bb46"
+    },
+    "next-bundle-optimizer": {
+      "source": "vercel/next.js",
+      "commit": "96ca7a4ad45a7e8a85462ac75ef1cf6e318846a7",
+      "sourceType": "github",
+      "skillPath": "skills/next-bundle-optimizer/SKILL.md",
+      "computedHash": "2a2d38e9ba5476f6eef7a86cc1531801b454fdcd5ee8b96745973e01b5d25397"
+    },
+    "next-cache-components-adoption": {
+      "source": "vercel/next.js",
+      "commit": "96ca7a4ad45a7e8a85462ac75ef1cf6e318846a7",
+      "sourceType": "github",
+      "skillPath": "skills/next-cache-components-adoption/SKILL.md",
+      "computedHash": "b333bc19058f17f2b05a338b229dba76c6fe2432e4943c6995ca8777f7074daf"
+    },
+    "next-dev-loop": {
+      "source": "vercel/next.js",
+      "commit": "96ca7a4ad45a7e8a85462ac75ef1cf6e318846a7",
+      "sourceType": "github",
+      "skillPath": "skills/next-dev-loop/SKILL.md",
+      "computedHash": "abe7b5e77b26f95ab21304b10ce1003a41e4e75b601505d76c8a0294e33a450d"
+    },
+    "next-partial-prefetching-adoption": {
+      "source": "vercel/next.js",
+      "commit": "96ca7a4ad45a7e8a85462ac75ef1cf6e318846a7",
+      "sourceType": "github",
+      "skillPath": "skills/next-partial-prefetching-adoption/SKILL.md",
+      "computedHash": "846465406dbe131257bfeba359e9966973a63c19b732cc5551f630851a9435cc"
+    },
+    "organization-best-practices": {
+      "source": "better-auth/skills",
+      "commit": "20c9e88a5c007461a703f1c213572b073196113e",
+      "sourceType": "github",
+      "skillPath": "better-auth/organization/SKILL.md",
+      "computedHash": "e5b1238c3b62c789918fe397ed52787742e50944343de33f459629f29b0fe922"
+    },
+    "playwright-best-practices": {
+      "source": "currents-dev/playwright-best-practices-skill",
+      "commit": "0b75b5835a87de1fdd202ba965f3bc5a27738fdf",
+      "sourceType": "github",
+      "skillPath": "playwright-best-practices/SKILL.md",
+      "computedHash": "111e9d3e9d63dea34814120fb6583c0b28ee45371662801d8e8d8bdf4b05dcb0"
+    },
+    "prisma-cli": {
+      "source": "prisma/skills",
+      "commit": "a6f192959cf43b08aa330fe1ffca090267215812",
+      "sourceType": "github",
+      "skillPath": "prisma-cli/SKILL.md",
+      "computedHash": "5867232acad55272d7278be9144b2cb8dcadd500d5a60a89260a2332bf70bd62"
+    },
+    "prisma-client-api": {
+      "source": "prisma/skills",
+      "commit": "a6f192959cf43b08aa330fe1ffca090267215812",
+      "sourceType": "github",
+      "skillPath": "prisma-client-api/SKILL.md",
+      "computedHash": "a4810158b4b436a69e782e6fab95a0ed5e5e0b2786c2ed00322051d29c4c2b64"
+    },
+    "prisma-driver-adapter-implementation": {
+      "source": "prisma/skills",
+      "commit": "a6f192959cf43b08aa330fe1ffca090267215812",
+      "sourceType": "github",
+      "skillPath": "prisma-driver-adapter-implementation/SKILL.md",
+      "computedHash": "6786760df68cf983505e8ea085c2ffa5253a0aa70c7b9ed72031d5f106d7d44f"
+    },
+    "prisma-postgres": {
+      "source": "prisma/skills",
+      "commit": "a6f192959cf43b08aa330fe1ffca090267215812",
+      "sourceType": "github",
+      "skillPath": "prisma-postgres/SKILL.md",
+      "computedHash": "bc15ea262db09a5372b2308d08d553d1437398b8eaf282d6c811db9b22524d85"
+    },
+    "prisma-postgres-setup": {
+      "source": "prisma/skills",
+      "commit": "a6f192959cf43b08aa330fe1ffca090267215812",
+      "sourceType": "github",
+      "skillPath": "prisma-postgres-setup/SKILL.md",
+      "computedHash": "0cb1de49d7d9a73dde137522ba8359a56f154630ff228e9c058655457abeece0"
+    },
+    "pwa-development": {
+      "source": "alinaqi/maggy",
+      "commit": "55aabe2493627e1de9cd09459d555181d66f3111",
+      "sourceType": "github",
+      "skillPath": "skills/pwa-development/SKILL.md",
+      "computedHash": "dfff1cfb9ced1ba365ac56c65d52eac9aed14783674e76374da3751d6ac8c251"
+    },
+    "shadcn": {
+      "source": "shadcn-ui/ui",
+      "commit": "968d8cb9dc42ae5d52e8fd356cf84596ec832a26",
+      "sourceType": "github",
+      "skillPath": "skills/shadcn/SKILL.md",
+      "computedHash": "388962d16c7a4f13aaeee0d8f128e50a87df8553d42ef7988c39c0e1c74a40e8"
+    },
+    "turborepo": {
+      "source": "vercel/turborepo",
+      "commit": "c74ee0ea54635828af83fba3da5094581d9e8f21",
+      "sourceType": "github",
+      "skillPath": "skills/turborepo/SKILL.md",
+      "computedHash": "49bb6427015253ce5d93f15dfa6c9ade3f8528f0fbe54769b6da1e1458f058d4"
+    },
+    "two-factor-authentication-best-practices": {
+      "source": "better-auth/skills",
+      "commit": "20c9e88a5c007461a703f1c213572b073196113e",
+      "sourceType": "github",
+      "skillPath": "better-auth/twoFactor/SKILL.md",
+      "computedHash": "89ca7fde92a69aec2cf7407d29058c5428e17d228e2578c79e0129d128524f38"
+    },
+    "upstash-ratelimit-js": {
+      "source": "upstash/skills",
+      "commit": "2326f1ad051bb20f419d7a28a6040662fb4e00f7",
+      "sourceType": "github",
+      "skillPath": "skills/upstash-ratelimit-js/SKILL.md",
+      "computedHash": "a8d5d7f4433956518671537979c69dc8c3cc8c06ff3a523c0d7cec8f7a240551"
+    },
+    "upstash-redis-js": {
+      "source": "upstash/skills",
+      "commit": "2326f1ad051bb20f419d7a28a6040662fb4e00f7",
+      "sourceType": "github",
+      "skillPath": "skills/upstash-redis-js/SKILL.md",
+      "computedHash": "7a3a07efc480ba8c99736e50caf8b8248785ae082d2d2c49a25d9ae7b6db456f"
+    },
+    "vercel-composition-patterns": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+      "sourceType": "github",
+      "skillPath": "skills/composition-patterns/SKILL.md",
+      "computedHash": "f711ed8b16162eaa712abbcdbbae6c926f86c57e60127735fecc3ad0dd85b3fa"
+    },
+    "vercel-optimize": {
+      "source": "vercel-labs/agent-skills",
+      "commit": "1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62",
+      "sourceType": "github",
+      "skillPath": "skills/vercel-optimize/SKILL.md",
+      "computedHash": "f69b2d70e9928eb4ae0b0acdaabb2ba2f42ba694aa33df52b4ee41e8fb9ced60"
+    },
+    "vitest": {
+      "source": "sentimony/skills",
+      "commit": "4be896eb9c8ebd6bab47d88422f83841648da408",
+      "sourceType": "github",
+      "skillPath": "skills/vitest/SKILL.md",
+      "computedHash": "11e9f24cd1b3b4050bdb42bf9cc04682ec32b363fb3f8cc46fc29887c5a27851"
+    },
+    "zod": {
+      "source": "pproenca/dot-skills",
+      "commit": "cf93c57cac89d6fc3e4194686000411567f5caf3",
+      "sourceType": "github",
+      "skillPath": "skills/.curated/zod/SKILL.md",
+      "computedHash": "0dda8a9c32affa99f4981924798d7399f0f5bd3ecc37910cfc4b05f260f442cd"
+    }
+  }
+}

@@ -1,26 +1,22 @@
 #!/usr/bin/env tsx
-
 import { prisma } from '@kumpelapp/db'
+import { ingestTraditions } from '@kumpelapp/ingest'
 
 async function main() {
-  console.log('🚀 Starting Tradition ingestion...')
-  console.log('')
-
+  console.log('🚀 Tradition seed ingestion (Wismut/Veilchen-Chronik)...')
+  const startedAt = Date.now()
   try {
-    console.log('ℹ️  Tradition ingestion not yet implemented')
-    console.log('   Will fetch from:')
-    console.log('   - Wikidata (Titel, Saison-Archiv)')
-    console.log('   - Wikipedia (Saison-Tabellen)')
-    console.log('   - fc-erzgebirge.de (Vereinsgeschichte)')
-    
-    // TODO: Implement actual fetching
-    // - Wikidata SPARQL query for Titel
-    // - Wikipedia table parsing for Saison-Archiv
-    // - Vereinseite parsing for Legenden
-    // - Generate Quiz questions from DB
-    
+    const result = await ingestTraditions()
+    const durationMs = Date.now() - startedAt
+    console.log('✅ Tradition ingestion completed')
+    console.log(JSON.stringify({ created: result.created, updated: result.updated, errors: result.errors.length, durationMs }, null, 2))
+    if (result.errors.length) {
+      console.log('Errors (max 20):')
+      result.errors.slice(0, 20).forEach((e) => console.log(` - ${e}`))
+    }
+    console.log('Hinweis: Fakten, Quellen/Attribution und Lizenzlage redaktionell verifizieren.')
   } catch (error) {
-    console.error('❌ Ingestion failed:', error)
+    console.error('❌ Tradition ingestion failed:', error)
     process.exit(1)
   } finally {
     await prisma.$disconnect()
