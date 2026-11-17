@@ -29,7 +29,12 @@ export function ShareAction({
   }, [])
 
   async function onShare() {
-    const shareUrl = url || (typeof window !== 'undefined' ? window.location.href : '')
+    const fallbackUrl = typeof window !== 'undefined' ? window.location.href : ''
+    const rawUrl = url || fallbackUrl
+    const shareUrl =
+      rawUrl && typeof window !== 'undefined'
+        ? new URL(rawUrl, window.location.origin).toString()
+        : rawUrl
     const shareData: ShareData = {
       title,
       ...(text ? { text } : {}),
