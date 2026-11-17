@@ -1,6 +1,15 @@
 {
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "corepack enable && pnpm install --no-frozen-lockfile",
-  "buildCommand": "corepack enable && pnpm --filter @kumpelapp/db db:generate && pnpm --filter webapp build",
-  "framework": "nextjs"
+  "buildCommand": "pnpm run vercel-build",
+  "devCommand": "pnpm dev",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": "nextjs",
+  "regions": ["iad1"],
+  "functions": {
+    "app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NODE_VERSION": "22"
+  }
 }
